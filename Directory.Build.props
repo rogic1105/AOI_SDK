@@ -1,0 +1,13 @@
+<Project>
+	<PropertyGroup>
+		<ParentPropsPath>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsPath>
+	</PropertyGroup>
+
+	<Import Project="$(ParentPropsPath)" Condition="Exists('$(ParentPropsPath)')" />
+
+	<PropertyGroup>
+		<SdkRoot>$(MSBuildThisFileDirectory)</SdkRoot>
+		<OutDir>$(SdkRoot)bin\$(Platform)\$(Configuration)\</OutDir>
+		<IntDir>$(SdkRoot)build\obj\$(MSBuildProjectName)\$(Platform)\$(Configuration)\</IntDir>
+	</PropertyGroup>
+</Project>

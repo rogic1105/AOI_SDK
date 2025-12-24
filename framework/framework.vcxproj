@@ -21,10 +21,9 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{b39f6111-258b-48f8-8a3e-f940771a4d52}</ProjectGuid>
-    <RootNamespace>core_lib</RootNamespace>
+    <ProjectGuid>{d3cc3425-9807-4866-aeb5-1f1dbc49523c}</ProjectGuid>
+    <RootNamespace>framework</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>core_lib</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -55,7 +54,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.8.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -72,12 +70,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)include;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)include;$(IncludePath)</IncludePath>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -111,19 +103,11 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;cufft.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <CudaCompile>
-      <CodeGeneration>compute_86,sm_86</CodeGeneration>
-      <AdditionalOptions>--std=c++17 %(AdditionalOptions)</AdditionalOptions>
-      <Include>$(ProjectDir)include</Include>
-      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -134,56 +118,19 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;cufft.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <CudaCompile>
-      <CodeGeneration>compute_86,sm_86</CodeGeneration>
-      <AdditionalOptions>--std=c++17 %(AdditionalOptions)</AdditionalOptions>
-      <Include>$(ProjectDir)include</Include>
-      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="src\fft_filter_soft_kernels.cu" />
-    <CudaCompile Include="src\fft_filter_soft_ops.cu" />
-    <CudaCompile Include="src\fft_ncc_ops.cu" />
-    <CudaCompile Include="src\memory_utils.cu" />
-    <CudaCompile Include="src\ncc_kernels.cu" />
-    <CudaCompile Include="src\ncc_ops.cu" />
-    <None Include="include\core\core_kernels.cuh" />
-    <CudaCompile Include="src\core_kernels.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-    <CudaCompile Include="src\core_ops.cu">
-      <FileType>Document</FileType>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)include</Include>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)include</Include>
-    </CudaCompile>
+    <ClInclude Include="include\framework\test_utils.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core\core_ops.hpp" />
-    <ClInclude Include="include\core\cuda_utils.hpp" />
-    <ClInclude Include="include\core\fft_filter_soft_kernels.cuh" />
-    <ClInclude Include="include\core\fft_filter_soft_ops.hpp" />
-    <ClInclude Include="include\core\fft_ncc_ops.hpp" />
-    <ClInclude Include="include\core\image_convert_utils.hpp" />
-    <ClInclude Include="include\core\memory_utils.h" />
-    <ClInclude Include="include\core\ncc_kernels.cuh" />
-    <ClInclude Include="include\core\ncc_ops.hpp" />
-    <ClInclude Include="include\core\shape_utils.hpp" />
-    <ClInclude Include="include\core\timer_utils.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\image_convert_utils.cpp" />
-    <ClCompile Include="src\shape_utils.cpp" />
+    <ClCompile Include="src\test_utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.8.targets" />
   </ImportGroup>
 </Project>

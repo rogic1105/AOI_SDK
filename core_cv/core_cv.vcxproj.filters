@@ -51,9 +51,6 @@
     <ClInclude Include="include\core\memory_utils.h">
       <Filter>標頭檔\utils_h</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\timer_utils.hpp">
-      <Filter>標頭檔\utils_h</Filter>
-    </ClInclude>
     <ClInclude Include="include\core\image_convert_utils.hpp">
       <Filter>標頭檔\utils_h</Filter>
     </ClInclude>
