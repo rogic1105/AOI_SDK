@@ -1,5 +1,5 @@
-// core_kernels.cu
-#include "core/core_kernels.cuh"
+// AOI_SDK\core_cv\src\core_kernels.cu
+#include "core_kernels.cuh"
 #include <cmath>
 
 // 這是為了讓 VSCode 的 IntelliSense 不要報錯，不影響實際編譯

@@ -1,41 +1,67 @@
-#include "framework/test_utils.hpp"  // 自己的標頭檔排第一
+//AOI_SDK\framework\src\test_utils.cpp
+
+#include "framework/test_utils.hpp"
 
 #include <filesystem>
 #include <iostream>
 #include <string>
 
-// 專案內的相依標頭檔
 #include "cpp_utils/terminal_colors.hpp"
 
-// 注意：這裡不需要 include stb_image.h，因為此函式只處理路徑，
-// 實際的讀圖動作是在 callback (testFunc) 裡面進行的。
+// ★★★ 強制檢查：如果沒有定義 WORKSPACE_ROOT，直接讓編譯失敗 ★★★
+// 這強迫使用者必須正確設定 Directory.Build.props，而不是讓程式亂猜路徑。
+#ifndef REPO_ROOT
+#error "REPO_ROOT is not defined! Please check your Directory.Build.props."
+#endif
 
 namespace fs = std::filesystem;
 
 namespace framework {
 
+    // 實作：取得輸出路徑並自動建立資料夾
+    std::string GetOutputPath(const std::string& suiteName, const std::string& fileName) {
+        fs::path root = REPO_ROOT;
+
+        // 組合路徑: <Root>/artifacts/<REPO_ROOT>/<FileName>
+        fs::path outputDir = root / "artifacts" / suiteName;
+        fs::path fullPath = outputDir / fileName;
+
+        // 自動建立目錄 (如果不存在)
+        if (!fs::exists(outputDir)) {
+            try {
+                fs::create_directories(outputDir);
+                std::cout << Color::CYAN << "[Info] Created output directory: "
+                    << outputDir.string() << Color::RESET << "\n";
+            }
+            catch (const std::exception& e) {
+                std::cerr << Color::RED << "[Error] Failed to create output dir: "
+                    << e.what() << Color::RESET << "\n";
+            }
+        }
+
+        // 回傳標準化的字串 (給 STB Image 用)
+        return fullPath.string();
+    }
+
     int RunTestBootstrap(const std::string& suiteName, TestEntryFunc testFunc) {
-        // 1. 路徑計算邏輯 (集中管理)
-#ifdef WORKSPACE_ROOT
-        fs::path workSpaceRoot = WORKSPACE_ROOT;
-#else
-    // 防呆：如果沒設定 props，預設回退路徑
-        fs::path workSpaceRoot = "../../../..";
-#endif
 
-        // 硬編碼的測試資料路徑
-        fs::path dataFolder = "02_Projects_Active/PICoater/05_QA_Validation/feasibility_test_data";
+        // 1. 路徑計算 (因為上面 #ifndef 擋住了，這裡一定安全)
+        fs::path projectRoot = PROJECT_ROOT;
+
+        // 硬編碼的測試資料路徑 (如果這也是變動的，未來也可以移到 props)
+        fs::path dataFolder = "05_QA_Validation/feasibility_test_data";
         fs::path imagePath = "20250117 L5C/Envision/Low_Angle_by_nor_line/mura/cal_25-11-17_11-16-48-283.bmp";
-        fs::path fullPath = workSpaceRoot / dataFolder / imagePath;
+        fs::path fullPath = projectRoot / dataFolder / imagePath;
 
-        // 標準化路徑分隔符號
         fullPath.make_preferred();
 
         // 2. 安全檢查
         if (!fs::exists(fullPath)) {
             std::cerr << Color::RED << "[Error] Cannot find test image!" << Color::RESET << "\n";
             std::cerr << Color::RED << "Looking at: " << fullPath << Color::RESET << "\n";
-            std::cerr << "Root: " << workSpaceRoot << "\n";
+            std::cerr << "Root: " << projectRoot << "\n";
+            // 這裡可以選擇不暫停直接 return，方便自動化測試
+            std::cout << "Press Enter to exit.\n";
             std::cin.get();
             return -1;
         }
@@ -56,8 +82,8 @@ namespace framework {
             return -1;
         }
 
-        // 5. 結束暫停
-        std::cout << "\n" << Color::GREEN << "Press Enter to exit." << Color::RESET << "\n";
+        // 5. 結束 (在 CI 環境或批次執行時，這裡可以考慮移除暫停)
+        std::cout << "\n" << Color::GREEN << "Test Finished. Press Enter to exit." << Color::RESET << "\n";
         std::cin.get();
         return 0;
     }

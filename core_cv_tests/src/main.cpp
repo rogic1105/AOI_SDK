@@ -1,7 +1,7 @@
 // core_cv_tests/main.cpp
 
-#include "framework/test_utils.hpp" // 包含 RunTestBootstrap
-// 宣告你的測試進入點
+#include "framework/test_utils.hpp" 
+
 void RunCoreTests(const std::string& imgPath);
 
 int main() {

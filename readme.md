@@ -100,7 +100,7 @@ SDK 的核心檔案位於 `sdk/AOI_SDK` 目錄下，主要模組如下：
 ```cpp
 #include <iostream>
 #include "framework/test_utils.hpp"
-#include "core/core_ops.hpp" // 引用核心演算法
+#include "core_cv/core_ops.hpp" // 引用核心演算法
 #include "Module_GetPICoaterBackground.hpp" // 引用特定模組
 
 // 測試邏輯實作

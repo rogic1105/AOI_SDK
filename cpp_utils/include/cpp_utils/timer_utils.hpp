@@ -16,7 +16,7 @@ public:
         auto end = clock::now();
         double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start_).count() / 1000.0;
         std::cout << std::fixed << std::setprecision(3)
-            << "Elapsed time = " << ms << " ms on " << name_ << "\n";
+            << "\nElapsed time = " << ms << " ms on " << name_ << "\n";
     }
 private:
     using clock = std::chrono::high_resolution_clock;
@@ -33,7 +33,7 @@ public:
         auto end = clock::now();
         double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start_).count() / 1000.0;
         std::cout << std::fixed << std::setprecision(3)
-            << "Elapsed time = " << ms << " ms on " << name_ << "\n";
+            << "\nElapsed time = " << ms << " ms on " << name_ << "\n";
     }
 private:
     using clock = std::chrono::high_resolution_clock;
@@ -53,7 +53,7 @@ public:
         auto end = clock::now();
         double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start_).count() / 1000.0;
         std::cout << std::fixed << std::setprecision(3)
-            << "Elapsed time = " << ms << " ms on " << name_ << "\n";
+            << "\nElapsed time = " << ms << " ms on " << name_ << "\n";
     }
 private:
     using clock = std::chrono::high_resolution_clock;

@@ -2,8 +2,8 @@
 
 #include "export_c/export_api.h"
 #include "GeneratePcbSegMask/GeneratePcbSegMask.hpp"
-#include "core/core_ops.hpp"   // まノ CoreLib 代刚 (Brighten单)
-#include "core/cuda_utils.hpp" // まノ checkCudaErrors
+#include "core_cv/core_ops.hpp"   // まノ CoreLib 代刚 (Brighten单)
+#include "core_cv/cuda_utils.hpp" // まノ checkCudaErrors
 #include <cuda_runtime.h>
 
 // ==========================================

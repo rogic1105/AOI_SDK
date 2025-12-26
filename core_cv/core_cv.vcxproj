@@ -149,37 +149,19 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="src\fft_filter_soft_kernels.cu" />
-    <CudaCompile Include="src\fft_filter_soft_ops.cu" />
-    <CudaCompile Include="src\fft_ncc_ops.cu" />
-    <CudaCompile Include="src\memory_utils.cu" />
-    <CudaCompile Include="src\ncc_kernels.cu" />
-    <CudaCompile Include="src\ncc_ops.cu" />
-    <None Include="include\core\core_kernels.cuh" />
-    <CudaCompile Include="src\core_kernels.cu">
+    <None Include="src\imgproc\core_kernels.cuh" />
+    <CudaCompile Include="src\imgproc\core_kernels.cu">
       <FileType>Document</FileType>
     </CudaCompile>
-    <CudaCompile Include="src\core_ops.cu">
+    <CudaCompile Include="src\imgproc\core_ops.cu">
       <FileType>Document</FileType>
       <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)include</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)include</Include>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core\core_ops.hpp" />
-    <ClInclude Include="include\core\cuda_utils.hpp" />
-    <ClInclude Include="include\core\fft_filter_soft_kernels.cuh" />
-    <ClInclude Include="include\core\fft_filter_soft_ops.hpp" />
-    <ClInclude Include="include\core\fft_ncc_ops.hpp" />
-    <ClInclude Include="include\core\image_convert_utils.hpp" />
-    <ClInclude Include="include\core\memory_utils.h" />
-    <ClInclude Include="include\core\ncc_kernels.cuh" />
-    <ClInclude Include="include\core\ncc_ops.hpp" />
-    <ClInclude Include="include\core\shape_utils.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\image_convert_utils.cpp" />
-    <ClCompile Include="src\shape_utils.cpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_ops.hpp" />
+    <ClInclude Include="include\core_cv\base\cuda_utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

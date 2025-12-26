@@ -12,95 +12,45 @@
     <Filter Include="來源檔案">
       <UniqueIdentifier>{1fe8875b-414e-4594-b896-31e2c567c675}</UniqueIdentifier>
     </Filter>
-    <Filter Include="來源檔案\utils">
+    <Filter Include="標頭檔\base">
+      <UniqueIdentifier>{a67cf561-8395-46ad-b3fd-2ff2591e64b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="標頭檔\imgproc">
+      <UniqueIdentifier>{2a7feee1-741c-441e-a034-705e0c233169}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="標頭檔\algo">
+      <UniqueIdentifier>{b0b9f19a-b95d-4e76-8d4f-1bf0004b2bf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="來源檔案\base">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="來源檔案\oprations">
+    <Filter Include="來源檔案\imgproc">
       <UniqueIdentifier>{63686548-6d8a-435c-ba96-c467d373f111}</UniqueIdentifier>
     </Filter>
-    <Filter Include="來源檔案\kernels">
+    <Filter Include="來源檔案\algo">
       <UniqueIdentifier>{102c0199-2e34-4c1e-a099-3915652abf37}</UniqueIdentifier>
     </Filter>
-    <Filter Include="標頭檔\kernels_h">
-      <UniqueIdentifier>{b0b9f19a-b95d-4e76-8d4f-1bf0004b2bf4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="標頭檔\oprations_h">
-      <UniqueIdentifier>{2a7feee1-741c-441e-a034-705e0c233169}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="標頭檔\utils_h">
-      <UniqueIdentifier>{a67cf561-8395-46ad-b3fd-2ff2591e64b0}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core\core_ops.hpp">
-      <Filter>標頭檔\oprations_h</Filter>
+    <ClInclude Include="include\core_cv\imgproc\core_ops.hpp">
+      <Filter>標頭檔\imgproc</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\cuda_utils.hpp">
-      <Filter>標頭檔\utils_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\fft_filter_soft_kernels.cuh">
-      <Filter>標頭檔\kernels_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\fft_filter_soft_ops.hpp">
-      <Filter>標頭檔\oprations_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\shape_utils.hpp">
-      <Filter>標頭檔\utils_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\memory_utils.h">
-      <Filter>標頭檔\utils_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\image_convert_utils.hpp">
-      <Filter>標頭檔\utils_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\ncc_ops.hpp">
-      <Filter>標頭檔\oprations_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\ncc_kernels.cuh">
-      <Filter>標頭檔\kernels_h</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\fft_ncc_ops.hpp">
-      <Filter>標頭檔\oprations_h</Filter>
+    <ClInclude Include="include\core_cv\base\cuda_utils.hpp">
+      <Filter>標頭檔\base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\core_kernels.cu">
-      <Filter>來源檔案\kernels</Filter>
+    <CudaCompile Include="src\imgproc\core_ops.cu">
+      <Filter>來源檔案\imgproc</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\fft_filter_soft_kernels.cu">
-      <Filter>來源檔案\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\core_ops.cu">
-      <Filter>來源檔案\oprations</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\fft_filter_soft_ops.cu">
-      <Filter>來源檔案\oprations</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\memory_utils.cu">
-      <Filter>來源檔案\utils</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\ncc_kernels.cu">
-      <Filter>來源檔案\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\ncc_ops.cu">
-      <Filter>來源檔案\oprations</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\fft_ncc_ops.cu">
-      <Filter>來源檔案\oprations</Filter>
+    <CudaCompile Include="src\imgproc\core_kernels.cu">
+      <Filter>來源檔案\imgproc</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\shape_utils.cpp">
-      <Filter>來源檔案\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="src\image_convert_utils.cpp">
-      <Filter>來源檔案\utils</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="include\core\core_kernels.cuh">
-      <Filter>標頭檔\kernels_h</Filter>
+    <None Include="src\imgproc\core_kernels.cuh">
+      <Filter>來源檔案\imgproc</Filter>
     </None>
   </ItemGroup>
 </Project>

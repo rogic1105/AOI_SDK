@@ -1,8 +1,9 @@
 // core_ops.cu
 
-#include "core/core_ops.hpp"
-#include "../include/core/core_kernels.cuh"
-#include "../include/core/cuda_utils.hpp"
+#include "core_cv/imgproc/core_ops.hpp"
+#include "core_cv/base/cuda_utils.hpp"
+#include "core_kernels.cuh"
+
 
 
 namespace core {
