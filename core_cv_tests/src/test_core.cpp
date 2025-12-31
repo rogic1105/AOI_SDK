@@ -1,4 +1,4 @@
-// TestApp/src/test_core.cpp
+// AOI_SDK\core_cv_tests\src\test_core.cpp
 
 #include "core_cv_tests/image_utils.hpp"
 #include "core_cv/imgproc/core_ops.hpp"

@@ -143,7 +143,7 @@
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
-      <AdditionalOptions>--std=c++17 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Xcompiler "/wd4819" %(AdditionalOptions)</AdditionalOptions>
       <Include>$(ProjectDir)include</Include>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>

@@ -1,61 +1,83 @@
-#pragma once
+ï»¿//AOI_SDK\core_cv_api\include\export_c\export_api.h
+
+#ifndef CORE_CV_API_EXPORT_API_H_
+#define CORE_CV_API_EXPORT_API_H_
 
 #include <cstdint>
 
-// --------------------------------------------------------------------------
-//  DLL ¾É¥X/¶×¤J ¥¨¶°©w¸q
-// --------------------------------------------------------------------------
-// ·í§Ú­Ì¦b½sÄ¶ ExportCDLL ±M®×®É¡AVS ·|¦Û°Ê©w¸q ExportCDLL_EXPORTS (©ÎÃş¦ü¦WºÙ)
-// ³o®É§Ú­Ì­n¥Î dllexport (¾É¥X)¡C
-// ·í¨ä¥L C++ ±M®×(¦p TestApp) ¤Ş¥Î³o­Ó¼ĞÀYÀÉ®É¡A§Ú­Ì­n¥Î dllimport (¶×¤J)¡C
-// --------------------------------------------------------------------------
-
-#ifdef EXPORTCDLL_EXPORTS
-#define EXP_API __declspec(dllexport)
+// å®šç¾© DLL åŒ¯å‡º/åŒ¯å…¥å·¨é›†
+#ifdef CORE_CV_API_EXPORTS
+#define CORE_CV_API __declspec(dllexport)
 #else
-#define EXP_API __declspec(dllimport)
+#define CORE_CV_API __declspec(dllimport)
 #endif
 
-// ©w¸q©I¥sºD¨Ò (Calling Convention)
-// __cdecl ¬O C/C++ ªº¹w³]¼Ğ·Ç¡A¤]¬O C# CallingConvention.Cdecl ªº¹ïÀ³
-#define EXP_CC __cdecl
-
-
-// --------------------------------------------------------------------------
-//  C »y¨¥¤¶­± (extern "C")
-//  Á×§K C++ Name Mangling¡A½T«O C# ¥i¥H§ä¨ì¥¿½Tªº¨ç¦¡¦WºÙ
-// --------------------------------------------------------------------------
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-    // 1. PCB Mask ¥Í¦¨ (§Aªº¥D­n¥\¯à)
-    EXP_API int EXP_CC BuildFullMaskFromFFT_C(
-        const uint8_t* img_gray,
-        int H, int W,
-        float fft_th, int bw_th, int border_t,
-        uint8_t* full_mask_out
-    );
+    // å®šç¾©éŒ¯èª¤ç¢¼
+#define CORE_CV_SUCCESS 0
+#define CORE_CV_ERROR_UNKNOWN -1
+#define CORE_CV_ERROR_NULL_POINTER -2
+#define CORE_CV_ERROR_INVALID_PARAM -3
+#define CORE_CV_ERROR_CUDA -4
 
-    // 2. «G«×½Õ¾ã (´ú¸Õ¥Î)
-    EXP_API int EXP_CC Process_Brighten(
-        const uint8_t* src,
-        uint8_t* dst,
-        int W, int H,
-        int value
-    );
+/**
+ * @brief èª¿æ•´å½±åƒäº®åº¦ (Brighten)
+ *
+ * @param src_ptr [In] è¼¸å…¥å½±åƒæ•¸æ“š (Host pointer, uint8_t, size = w * h)
+ * @param width   [In] å½±åƒå¯¬åº¦
+ * @param height  [In] å½±åƒé«˜åº¦
+ * @param value   [In] äº®åº¦å¢æ¸›å€¼ (ä¾‹å¦‚ 50 æˆ– -50)
+ * @param dst_ptr [Out] è¼¸å‡ºå½±åƒæ•¸æ“š (Host pointer, éœ€é å…ˆåˆ†é…è¨˜æ†¶é«”)
+ * @return int 0: Success, <0: Error Code
+ */
+    CORE_CV_API int CoreCV_Brighten(
+        const uint8_t* src_ptr,
+        int width,
+        int height,
+        int value,
+        uint8_t* dst_ptr);
 
-    // 3. ¤G­È¤Æ (´ú¸Õ¥Î)
-    EXP_API int EXP_CC Process_Threshold(
-        const uint8_t* src,
-        uint8_t* dst,
-        int W, int H,
-        int value
-    );
+    /**
+     * @brief äºŒå€¼åŒ–å½±åƒ (Threshold)
+     *
+     * @param src_ptr   [In] è¼¸å…¥å½±åƒæ•¸æ“š
+     * @param width     [In] å½±åƒå¯¬åº¦
+     * @param height    [In] å½±åƒé«˜åº¦
+     * @param threshold [In] é–¥å€¼ (0-255)
+     * @param dst_ptr   [Out] è¼¸å‡ºå½±åƒæ•¸æ“š
+     * @return int 0: Success, <0: Error Code
+     */
+    CORE_CV_API int CoreCV_Threshold(
+        const uint8_t* src_ptr,
+        int width,
+        int height,
+        uint8_t threshold,
+        uint8_t* dst_ptr);
 
-    // 4. ¤ÏÂà (´ú¸Õ¥Î)
-    EXP_API int EXP_CC Process_Invert(
-        const uint8_t* src,
-        uint8_t* dst,
-        int W, int H
-    );
+    /**
+     * @brief å·ç©é‹ç®— (Convolution)
+     *
+     * @param src_ptr   [In] è¼¸å…¥å½±åƒæ•¸æ“š
+     * @param width     [In] å½±åƒå¯¬åº¦
+     * @param height    [In] å½±åƒé«˜åº¦
+     * @param mask_ptr  [In] å·ç©æ ¸æ•¸æ“š (Host pointer, float array)
+     * @param mask_size [In] å·ç©æ ¸å¤§å° (ä¾‹å¦‚ 3 ä»£è¡¨ 3x3)
+     * @param dst_ptr   [Out] è¼¸å‡ºå½±åƒæ•¸æ“š
+     * @return int 0: Success, <0: Error Code
+     */
+    CORE_CV_API int CoreCV_Convolution(
+        const uint8_t* src_ptr,
+        int width,
+        int height,
+        const float* mask_ptr,
+        int mask_size,
+        uint8_t* dst_ptr);
 
+#ifdef __cplusplus
 }
+#endif
+
+#endif  // CORE_CV_API_EXPORT_API_H_

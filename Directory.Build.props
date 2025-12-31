@@ -7,7 +7,14 @@
 
 	<PropertyGroup>
 		<SdkRoot>$(MSBuildThisFileDirectory)</SdkRoot>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(EngRoot)' == ''">
 		<OutDir>$(SdkRoot)bin\$(Platform)\$(Configuration)\</OutDir>
 		<IntDir>$(SdkRoot)build\obj\$(MSBuildProjectName)\$(Platform)\$(Configuration)\</IntDir>
+
+		<OutputPath>$(OutDir)</OutputPath>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
+
 </Project>

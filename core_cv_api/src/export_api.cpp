@@ -1,88 +1,182 @@
-// AOI_LIB/ExportCDLL/src/export_api.cpp
+Ôªø//AOI_SDK\core_cv_api\src\export_api.cpp
 
 #include "export_c/export_api.h"
-#include "GeneratePcbSegMask/GeneratePcbSegMask.hpp"
-#include "core_cv/core_ops.hpp"   // §ﬁ•Œ CoreLib ¥˙∏’•\Ø‡ (Brightenµ•)
-#include "core_cv/cuda_utils.hpp" // §ﬁ•Œ checkCudaErrors
+
+// ÂºïÁî®ÂÖßÈÉ®Ê†∏ÂøÉÈÅãÁÆóÊ®ôÈ†≠Ê™î
+#include "core_cv/imgproc/core_ops.hpp"
 #include <cuda_runtime.h>
+#include <iostream>
+#include <algorithm> // for std::exception
 
-// ==========================================
-//  Helper: ≥q•Œ CUDA ∞ı¶Êæπ (µπ¥˙∏’•\Ø‡•Œ)
-// ==========================================
-typedef void (*KernelFunc)(const uint8_t*, uint8_t*, int, int, int, cudaStream_t);
+// ÂÖßÈÉ®ËºîÂä©Â∑®ÈõÜÔºöÊ™¢Êü• CUDA ÈåØË™§‰∏¶ÂõûÂÇ≥ÈåØË™§Á¢º
+#define CHECK_CUDA(call)                                          \
+  {                                                               \
+    cudaError_t err = call;                                       \
+    if (err != cudaSuccess) {                                     \
+      std::cerr << "[CoreCV API] CUDA Error: "                    \
+                << cudaGetErrorString(err) << "\n";               \
+      return CORE_CV_ERROR_CUDA;                                  \
+    }                                                             \
+  }
 
-int RunCudaKernel(const uint8_t* h_in, uint8_t* h_out, int W, int H, int param, KernelFunc func) {
-    if (!h_in || !h_out || W <= 0 || H <= 0) return -1;
+// ÂØ¶‰ΩúÔºöBrighten
+int CoreCV_Brighten(const uint8_t* src_ptr, int width, int height, int value, uint8_t* dst_ptr) {
+    if (!src_ptr || !dst_ptr) return CORE_CV_ERROR_NULL_POINTER;
+    if (width <= 0 || height <= 0) return CORE_CV_ERROR_INVALID_PARAM;
 
-    uint8_t* d_in = nullptr, * d_out = nullptr;
-    size_t size = (size_t)W * H;
+    size_t size = static_cast<size_t>(width) * height * sizeof(uint8_t);
+    uint8_t* d_in = nullptr;
+    uint8_t* d_out = nullptr;
 
     try {
-        checkCudaErrors(cudaMalloc(&d_in, size));
-        checkCudaErrors(cudaMalloc(&d_out, size));
+        // 1. Allocate GPU Memory
+        CHECK_CUDA(cudaMalloc(&d_in, size));
+        CHECK_CUDA(cudaMalloc(&d_out, size));
 
-        // Host -> Device
-        checkCudaErrors(cudaMemcpy(d_in, h_in, size, cudaMemcpyHostToDevice));
+        // 2. Upload Data (Host -> Device)
+        CHECK_CUDA(cudaMemcpy(d_in, src_ptr, size, cudaMemcpyHostToDevice));
 
-        // Run Kernel
-        func(d_in, d_out, W, H, param, 0);
-        checkCudaErrors(cudaGetLastError());
+        // 3. Execute Kernel
+        core::brighten_u8_gpu(d_in, d_out, width, height, value, 0);
+        CHECK_CUDA(cudaGetLastError()); // Check launch error
+        CHECK_CUDA(cudaDeviceSynchronize()); // Wait for completion
 
-        // Device -> Host
-        checkCudaErrors(cudaMemcpy(h_out, d_out, size, cudaMemcpyDeviceToHost));
+        // 4. Download Data (Device -> Host)
+        CHECK_CUDA(cudaMemcpy(dst_ptr, d_out, size, cudaMemcpyDeviceToHost));
+
+        // 5. Free Resources
+        cudaFree(d_in);
+        cudaFree(d_out);
+
+        return CORE_CV_SUCCESS;
     }
-    catch (...) {
+    catch (const std::exception& e) {
+        std::cerr << "[CoreCV API] Exception: " << e.what() << "\n";
         if (d_in) cudaFree(d_in);
         if (d_out) cudaFree(d_out);
-        return -99;
+        return CORE_CV_ERROR_UNKNOWN;
     }
-
-    if (d_in) cudaFree(d_in);
-    if (d_out) cudaFree(d_out);
-    return 0;
 }
 
-// ==========================================
-//  DLL æ…•X§∂≠±
-// ==========================================
-extern "C" {
+// ÂØ¶‰ΩúÔºöThreshold
+int CoreCV_Threshold(const uint8_t* src_ptr, int width, int height, uint8_t threshold, uint8_t* dst_ptr) {
+    if (!src_ptr || !dst_ptr) return CORE_CV_ERROR_NULL_POINTER;
+    if (width <= 0 || height <= 0) return CORE_CV_ERROR_INVALID_PARAM;
 
-    // 1. •D≠n•\Ø‡°GPCB Mask •Õ¶®
-    int EXP_CC BuildFullMaskFromFFT_C(
-        const uint8_t* img_gray, int H, int W,
-        float fft_th, int bw_th, int border_t,
-        uint8_t* full_mask_out)
-    {
-        try {
-            // [≠◊•ø¬I]°G≥o∏Ã§£ª›≠n¶A¬‡ vector §F°I
-            // ™Ω±µß‚ C# ∂«∂i®”™∫´¸º– (img_gray) ∂«µπßA™∫•˛´¸º–™©®Á¶°
-            GeneratePcbSegMask(img_gray, H, W, fft_th, bw_th, border_t, full_mask_out);
-            return 0;
-        }
-        catch (...) {
-            return -99;
-        }
+    size_t size = static_cast<size_t>(width) * height * sizeof(uint8_t);
+    uint8_t* d_in = nullptr;
+    uint8_t* d_out = nullptr;
+
+    try {
+        CHECK_CUDA(cudaMalloc(&d_in, size));
+        CHECK_CUDA(cudaMalloc(&d_out, size));
+
+        CHECK_CUDA(cudaMemcpy(d_in, src_ptr, size, cudaMemcpyHostToDevice));
+
+        core::threshold_u8_gpu(d_in, d_out, width, height, threshold, 0);
+        CHECK_CUDA(cudaGetLastError());
+        CHECK_CUDA(cudaDeviceSynchronize());
+
+        CHECK_CUDA(cudaMemcpy(dst_ptr, d_out, size, cudaMemcpyDeviceToHost));
+
+        cudaFree(d_in);
+        cudaFree(d_out);
+
+        return CORE_CV_SUCCESS;
     }
-
-    // 2. [¥˙∏’•Œ] ´G´◊Ω’æ„
-    int EXP_CC Process_Brighten(const uint8_t* src, uint8_t* dst, int W, int H, int value) {
-        return RunCudaKernel(src, dst, W, H, value, core::brighten_u8_gpu);
+    catch (const std::exception& e) {
+        std::cerr << "[CoreCV API] Exception: " << e.what() << "\n";
+        if (d_in) cudaFree(d_in);
+        if (d_out) cudaFree(d_out);
+        return CORE_CV_ERROR_UNKNOWN;
     }
+}
 
-    // 3. [¥˙∏’•Œ] §G≠»§∆
-    int EXP_CC Process_Threshold(const uint8_t* src, uint8_t* dst, int W, int H, int value) {
-        // Lambda ¬‡´¨æA∞t
-        auto lambda = [](const uint8_t* i, uint8_t* o, int w, int h, int p, cudaStream_t s) {
-            core::threshold_u8_gpu(i, o, w, h, (uint8_t)p, s);
-            };
-        return RunCudaKernel(src, dst, W, H, value, lambda);
+int CoreCV_Invert(const uint8_t* src_ptr, int width, int height, uint8_t* dst_ptr) {
+    // 1. Âü∫Êú¨ÂèÉÊï∏Ê™¢Êü•
+    if (!src_ptr || !dst_ptr) return CORE_CV_ERROR_NULL_POINTER;
+    if (width <= 0 || height <= 0) return CORE_CV_ERROR_INVALID_PARAM;
+
+    size_t size = static_cast<size_t>(width) * height * sizeof(uint8_t);
+    uint8_t* d_in = nullptr;
+    uint8_t* d_out = nullptr;
+
+    try {
+        // 2. Allocate GPU Memory
+        CHECK_CUDA(cudaMalloc(&d_in, size));
+        CHECK_CUDA(cudaMalloc(&d_out, size));
+
+        // 3. Upload Data (Host -> Device)
+        CHECK_CUDA(cudaMemcpy(d_in, src_ptr, size, cudaMemcpyHostToDevice));
+
+        // 4. Execute Kernel
+        // Ê≥®ÊÑèÔºöÈÄôË£°ÂëºÂè´ÁöÑÊòØ core_ops.hpp Ë£°ÁöÑ wrapper function
+        // Ë´ãÁ¢∫‰øù‰Ω†Âú® core_ops.cu Ë£°Â∑≤Á∂ìÂØ¶‰Ωú‰∫Ü invert_u8_gpu ‰æÜÂïüÂãï k_invert_u8
+        core::invert_u8_gpu(d_in, d_out, width, height, 0);
+        
+        CHECK_CUDA(cudaGetLastError());
+        CHECK_CUDA(cudaDeviceSynchronize());
+
+        // 5. Download Data (Device -> Host)
+        CHECK_CUDA(cudaMemcpy(dst_ptr, d_out, size, cudaMemcpyDeviceToHost));
+
+        // 6. Free Resources
+        cudaFree(d_in);
+        cudaFree(d_out);
+
+        return CORE_CV_SUCCESS;
     }
+    catch (const std::exception& e) {
+        std::cerr << "[CoreCV API] Exception: " << e.what() << "\n";
+        // Á¢∫‰øùÁôºÁîü‰æãÂ§ñÊôÇ‰πüÊúâÈáãÊîæË®òÊÜ∂È´î
+        if (d_in) cudaFree(d_in);
+        if (d_out) cudaFree(d_out);
+        return CORE_CV_ERROR_UNKNOWN;
+    }
+}
 
-    // 4. [¥˙∏’•Œ] §œ¬‡
-    int EXP_CC Process_Invert(const uint8_t* src, uint8_t* dst, int W, int H) {
-        auto lambda = [](const uint8_t* i, uint8_t* o, int w, int h, int p, cudaStream_t s) {
-            core::invert_u8_gpu(i, o, w, h, s);
-            };
-        return RunCudaKernel(src, dst, W, H, 0, lambda);
+// ÂØ¶‰ΩúÔºöConvolution
+int CoreCV_Convolution(const uint8_t* src_ptr, int width, int height, const float* mask_ptr, int mask_size, uint8_t* dst_ptr) {
+    if (!src_ptr || !dst_ptr || !mask_ptr) return CORE_CV_ERROR_NULL_POINTER;
+    if (width <= 0 || height <= 0 || mask_size <= 0) return CORE_CV_ERROR_INVALID_PARAM;
+
+    size_t img_size = static_cast<size_t>(width) * height * sizeof(uint8_t);
+    size_t mask_bytes = static_cast<size_t>(mask_size) * mask_size * sizeof(float);
+
+    uint8_t* d_in = nullptr;
+    uint8_t* d_out = nullptr;
+    float* d_mask = nullptr;
+
+    try {
+        // 1. Allocate GPU Memory (ÂåÖÂê´ Mask)
+        CHECK_CUDA(cudaMalloc(&d_in, img_size));
+        CHECK_CUDA(cudaMalloc(&d_out, img_size));
+        CHECK_CUDA(cudaMalloc(&d_mask, mask_bytes));
+
+        // 2. Upload Data (Image + Mask)
+        CHECK_CUDA(cudaMemcpy(d_in, src_ptr, img_size, cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaMemcpy(d_mask, mask_ptr, mask_bytes, cudaMemcpyHostToDevice));
+
+        // 3. Execute Kernel
+        core::convolution_u8_gpu(d_in, d_out, width, height, d_mask, mask_size, 0);
+        CHECK_CUDA(cudaGetLastError());
+        CHECK_CUDA(cudaDeviceSynchronize());
+
+        // 4. Download Data
+        CHECK_CUDA(cudaMemcpy(dst_ptr, d_out, img_size, cudaMemcpyDeviceToHost));
+
+        // 5. Free Resources
+        cudaFree(d_in);
+        cudaFree(d_out);
+        cudaFree(d_mask);
+
+        return CORE_CV_SUCCESS;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "[CoreCV API] Exception: " << e.what() << "\n";
+        if (d_in) cudaFree(d_in);
+        if (d_out) cudaFree(d_out);
+        if (d_mask) cudaFree(d_mask);
+        return CORE_CV_ERROR_UNKNOWN;
     }
 }
