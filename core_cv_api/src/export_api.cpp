@@ -19,7 +19,6 @@
     }                                                             \
   }
 
-// 實作：Brighten
 int CoreCV_Brighten(const uint8_t* src_ptr, int width, int height, int value, uint8_t* dst_ptr) {
     if (!src_ptr || !dst_ptr) return CORE_CV_ERROR_NULL_POINTER;
     if (width <= 0 || height <= 0) return CORE_CV_ERROR_INVALID_PARAM;
@@ -58,7 +57,6 @@ int CoreCV_Brighten(const uint8_t* src_ptr, int width, int height, int value, ui
     }
 }
 
-// 實作：Threshold
 int CoreCV_Threshold(const uint8_t* src_ptr, int width, int height, uint8_t threshold, uint8_t* dst_ptr) {
     if (!src_ptr || !dst_ptr) return CORE_CV_ERROR_NULL_POINTER;
     if (width <= 0 || height <= 0) return CORE_CV_ERROR_INVALID_PARAM;
@@ -135,7 +133,6 @@ int CoreCV_Invert(const uint8_t* src_ptr, int width, int height, uint8_t* dst_pt
     }
 }
 
-// 實作：Convolution
 int CoreCV_Convolution(const uint8_t* src_ptr, int width, int height, const float* mask_ptr, int mask_size, uint8_t* dst_ptr) {
     if (!src_ptr || !dst_ptr || !mask_ptr) return CORE_CV_ERROR_NULL_POINTER;
     if (width <= 0 || height <= 0 || mask_size <= 0) return CORE_CV_ERROR_INVALID_PARAM;

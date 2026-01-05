@@ -12,20 +12,18 @@ namespace AOI.SDK.TestApp
         // ---------------------------------------------------------
         // 1. DLL 匯入 (對應 core_cv_api 的 export_api.cpp)
         // ---------------------------------------------------------
-
-        // [修正] DLL 名稱改為我們剛編譯出來的檔案
         private const string DLL_NAME = "core_cv_api.dll";
 
-        // [修正] 參數順序與 C++ 標頭檔保持一致: (src, w, h, val, dst)
+
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int CoreCV_Brighten(IntPtr src, int width, int height, int value, IntPtr dst);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int CoreCV_Threshold(IntPtr src, int width, int height, byte threshold, IntPtr dst);
 
-        // 這次範例先沒加 Invert，你可以自己擴充 Convolution
-        // [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        // public static extern int CoreCV_Convolution(IntPtr src, int width, int height, float[] mask, int maskSize, IntPtr dst);
+        // 加入 Invert 的宣告
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Invert(IntPtr src, int width, int height, IntPtr dst);
 
         // ---------------------------------------------------------
         // 2. 變數宣告
@@ -101,12 +99,10 @@ namespace AOI.SDK.TestApp
         // 反轉 (假設你還沒實作 CoreCV_Invert，這裡先註解掉或改用 CPU 實作)
         private void btnInvert_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("C++ DLL 尚未實作 Invert，請先實作 export_api.cpp");
-            /*
+            // 把原本註解掉的程式碼打開，並移除 MessageBox
             RunProcess((src, dst, w, h) =>
                 CoreCV_Invert(src, w, h, dst)
             );
-            */
         }
 
         // 回到原圖

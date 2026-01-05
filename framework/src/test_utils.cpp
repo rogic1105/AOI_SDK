@@ -8,8 +8,6 @@
 
 #include "cpp_utils/terminal_colors.hpp"
 
-// ★★★ 強制檢查：如果沒有定義 WORKSPACE_ROOT，直接讓編譯失敗 ★★★
-// 這強迫使用者必須正確設定 Directory.Build.props，而不是讓程式亂猜路徑。
 #ifndef REPO_ROOT
 #error "REPO_ROOT is not defined! Please check your Directory.Build.props."
 #endif
@@ -45,13 +43,11 @@ namespace framework {
 
     int RunTestBootstrap(const std::string& suiteName, TestEntryFunc testFunc) {
 
-        // 1. 路徑計算 (因為上面 #ifndef 擋住了，這裡一定安全)
+        // 測試資料路徑位於props
         fs::path projectRoot = PROJECT_ROOT;
-
-        // 硬編碼的測試資料路徑 (如果這也是變動的，未來也可以移到 props)
-        fs::path dataFolder = "05_QA_Validation/feasibility_test_data";
-        fs::path imagePath = "20250117 L5C/Envision/Low_Angle_by_nor_line/mura/cal_25-11-17_11-16-48-283.bmp";
-        fs::path fullPath = projectRoot / dataFolder / imagePath;
+        fs::path srcFolder = DATA_FOLDER_PATH;
+        fs::path imagePath = TARGET_IMAGE_PATH;
+        fs::path fullPath = projectRoot / srcFolder / imagePath;
 
         fullPath.make_preferred();
 
