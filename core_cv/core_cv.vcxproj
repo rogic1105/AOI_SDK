@@ -149,19 +149,29 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="src\imgproc\core_kernels.cuh" />
-    <CudaCompile Include="src\imgproc\core_kernels.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-    <CudaCompile Include="src\imgproc\core_ops.cu">
-      <FileType>Document</FileType>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)include</Include>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)include</Include>
-    </CudaCompile>
+    <CudaCompile Include="src\imgproc\background\background_ops.cu" />
+    <CudaCompile Include="src\imgproc\enhance\enhance_kernels.cu" />
+    <CudaCompile Include="src\imgproc\enhance\enhance_ops.cu" />
+    <CudaCompile Include="src\imgproc\features\features_kernels.cu" />
+    <CudaCompile Include="src\imgproc\features\features_ops.cu" />
+    <CudaCompile Include="src\imgproc\filters\filters_kernels.cu" />
+    <CudaCompile Include="src\imgproc\filters\filters_ops.cu" />
+    <CudaCompile Include="src\imgproc\utils\utils_kernels.cu" />
+    <CudaCompile Include="src\imgproc\utils\utils_ops.cu" />
+    <CudaCompile Include="src\imgproc\background\background_kernels.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core_cv\imgproc\core_ops.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_background.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_enhance.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_features.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_filters.hpp" />
     <ClInclude Include="include\core_cv\base\cuda_utils.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_utils.hpp" />
+    <ClInclude Include="src\imgproc\background\background_kernels.cuh" />
+    <ClInclude Include="src\imgproc\enhance\enhance_kernels.cuh" />
+    <ClInclude Include="src\imgproc\features\features_kernels.cuh" />
+    <ClInclude Include="src\imgproc\filters\filters_kernels.cuh" />
+    <ClInclude Include="src\imgproc\utils\utils_kernels.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

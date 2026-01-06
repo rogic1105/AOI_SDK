@@ -33,24 +33,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core_cv\imgproc\core_ops.hpp">
-      <Filter>標頭檔\imgproc</Filter>
-    </ClInclude>
     <ClInclude Include="include\core_cv\base\cuda_utils.hpp">
       <Filter>標頭檔\base</Filter>
     </ClInclude>
+    <ClInclude Include="include\core_cv\imgproc\core_enhance.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\enhance\enhance_kernels.cuh" />
+    <ClInclude Include="include\core_cv\imgproc\core_filters.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\filters\filters_kernels.cuh" />
+    <ClInclude Include="include\core_cv\imgproc\core_features.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core_cv\imgproc\core_utils.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\features\features_kernels.cuh" />
+    <ClInclude Include="src\imgproc\utils\utils_kernels.cuh" />
+    <ClInclude Include="include\core_cv\imgproc\core_background.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\background\background_kernels.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\imgproc\core_ops.cu">
-      <Filter>來源檔案\imgproc</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\imgproc\core_kernels.cu">
-      <Filter>來源檔案\imgproc</Filter>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="src\imgproc\core_kernels.cuh">
-      <Filter>來源檔案\imgproc</Filter>
-    </None>
+    <CudaCompile Include="src\imgproc\background\background_kernels.cu" />
+    <CudaCompile Include="src\imgproc\utils\utils_kernels.cu" />
+    <CudaCompile Include="src\imgproc\filters\filters_kernels.cu" />
+    <CudaCompile Include="src\imgproc\features\features_kernels.cu" />
+    <CudaCompile Include="src\imgproc\enhance\enhance_kernels.cu" />
+    <CudaCompile Include="src\imgproc\utils\utils_ops.cu" />
+    <CudaCompile Include="src\imgproc\filters\filters_ops.cu" />
+    <CudaCompile Include="src\imgproc\features\features_ops.cu" />
+    <CudaCompile Include="src\imgproc\enhance\enhance_ops.cu" />
+    <CudaCompile Include="src\imgproc\background\background_ops.cu" />
   </ItemGroup>
 </Project>

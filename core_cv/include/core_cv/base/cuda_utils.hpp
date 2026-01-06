@@ -1,4 +1,4 @@
-// cuda_utils.hpp
+// AOI_SDK\core_cv\include\core_cv\base\cuda_utils.hpp
 
 #pragma once
 #include <cuda_runtime.h>
@@ -13,6 +13,30 @@
 #include <vector>
 
 
+// =========================================================
+// [新增] VSCode IntelliSense Fix
+// 讓編輯器看得懂 __global__, blockIdx 等關鍵字，不影響實際編譯
+// =========================================================
+#ifdef __INTELLISENSE__
+#ifndef __CUDACC__
+#define __CUDACC__
+#endif
+#define __global__
+#define __device__
+#define __host__
+#define __forceinline__
+#define __shared__
+inline void __syncthreads() {}
+inline void __threadfence_block() {}
+template<class T> inline T __clz(const T val) { return val; }
+struct __device_builtin__ dim3 { int x; int y; int z; };
+typedef struct dim3 dim3;
+extern dim3 blockIdx;
+extern dim3 blockDim;
+extern dim3 threadIdx;
+extern dim3 gridDim;
+#endif
+// =========================================================
 
 
 inline void cudaCheck(cudaError_t e, const char* expr, const char* file, int line) {
