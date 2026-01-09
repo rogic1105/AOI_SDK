@@ -1,4 +1,4 @@
-// 這裡專門負責編譯 STB 實作，其他地方只要 include .h 檔就好
+// AOI_SDK\cpp_utils\src\stb_impl.cpp
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define _CRT_SECURE_NO_WARNINGS 

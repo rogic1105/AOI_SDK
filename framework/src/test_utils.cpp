@@ -41,7 +41,7 @@ namespace framework {
         return fullPath.string();
     }
 
-    int RunTestBootstrap(const std::string& suiteName, TestEntryFunc testFunc) {
+    int RunAOITestBootstrap(const std::string& suiteName, TestEntryFunc testFunc) {
 
         // 測試資料路徑位於props
         fs::path projectRoot = PROJECT_ROOT;

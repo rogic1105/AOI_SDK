@@ -16,6 +16,6 @@ namespace framework {
     std::string GetOutputPath(const std::string& suiteName, const std::string& fileName);
 
     // 通用的測試啟動器
-    int RunTestBootstrap(const std::string& suiteName, TestEntryFunc testFunc);
+    int RunAOITestBootstrap(const std::string& suiteName, TestEntryFunc testFunc);
 
 }  // namespace framework

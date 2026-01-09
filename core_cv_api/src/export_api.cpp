@@ -3,7 +3,11 @@
 #include "export_c/export_api.h"
 
 // 引用內部核心運算標頭檔
-#include "core_cv/imgproc/core_ops.hpp"
+#include "core_cv/imgproc/core_background.hpp"
+#include "core_cv/imgproc/core_enhance.hpp"
+#include "core_cv/imgproc/core_features.hpp"
+#include "core_cv/imgproc/core_filters.hpp"
+#include "core_cv/imgproc/core_utils.hpp"
 #include <cuda_runtime.h>
 #include <iostream>
 #include <algorithm> // for std::exception

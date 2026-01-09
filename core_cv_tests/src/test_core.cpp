@@ -1,7 +1,13 @@
 // AOI_SDK\core_cv_tests\src\test_core.cpp
 
 #include "core_cv_tests/image_utils.hpp"
-#include "core_cv/imgproc/core_ops.hpp"
+
+#include "core_cv/imgproc/core_background.hpp"
+#include "core_cv/imgproc/core_enhance.hpp"
+#include "core_cv/imgproc/core_features.hpp"
+#include "core_cv/imgproc/core_filters.hpp"
+#include "core_cv/imgproc/core_utils.hpp"
+
 #include "core_cv/base/cuda_utils.hpp"
 #include "cpp_utils/timer_utils.hpp"
 #include "cpp_utils/terminal_colors.hpp"

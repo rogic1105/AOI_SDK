@@ -31,6 +31,21 @@
     <Filter Include="來源檔案\algo">
       <UniqueIdentifier>{102c0199-2e34-4c1e-a099-3915652abf37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="來源檔案\imgproc\background">
+      <UniqueIdentifier>{97348d3e-37e4-4f6f-bbd9-200557ee6264}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="來源檔案\imgproc\enhance">
+      <UniqueIdentifier>{1cdeb80b-de3d-44cf-9f36-b6e2ff783505}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="來源檔案\imgproc\features">
+      <UniqueIdentifier>{a8143d9e-43a5-4c12-b4a0-22354eb8daff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="來源檔案\imgproc\filters">
+      <UniqueIdentifier>{3ffad2cf-b6d6-4680-a860-508b3920dc84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="來源檔案\imgproc\utils">
+      <UniqueIdentifier>{007a4898-f0f1-4c52-85e2-d0c040df3de0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core_cv\base\cuda_utils.hpp">
@@ -39,34 +54,75 @@
     <ClInclude Include="include\core_cv\imgproc\core_enhance.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="src\imgproc\enhance\enhance_kernels.cuh" />
     <ClInclude Include="include\core_cv\imgproc\core_filters.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="src\imgproc\filters\filters_kernels.cuh" />
     <ClInclude Include="include\core_cv\imgproc\core_features.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
     <ClInclude Include="include\core_cv\imgproc\core_utils.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="src\imgproc\features\features_kernels.cuh" />
-    <ClInclude Include="src\imgproc\utils\utils_kernels.cuh" />
     <ClInclude Include="include\core_cv\imgproc\core_background.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="src\imgproc\background\background_kernels.cuh" />
+    <ClInclude Include="src\imgproc\background\background_kernels.cuh">
+      <Filter>來源檔案\imgproc\background</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\enhance\enhance_kernels.cuh">
+      <Filter>來源檔案\imgproc\enhance</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\features\features_kernels.cuh">
+      <Filter>來源檔案\imgproc\features</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\filters\filters_kernels.cuh">
+      <Filter>來源檔案\imgproc\filters</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgproc\utils\utils_kernels.cuh">
+      <Filter>來源檔案\imgproc\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core_cv\base\cuda_memory.hpp">
+      <Filter>標頭檔\base</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core_cv\imgcodecs\core_imgcodecs.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\imgproc\background\background_kernels.cu" />
-    <CudaCompile Include="src\imgproc\utils\utils_kernels.cu" />
-    <CudaCompile Include="src\imgproc\filters\filters_kernels.cu" />
-    <CudaCompile Include="src\imgproc\features\features_kernels.cu" />
-    <CudaCompile Include="src\imgproc\enhance\enhance_kernels.cu" />
-    <CudaCompile Include="src\imgproc\utils\utils_ops.cu" />
-    <CudaCompile Include="src\imgproc\filters\filters_ops.cu" />
-    <CudaCompile Include="src\imgproc\features\features_ops.cu" />
-    <CudaCompile Include="src\imgproc\enhance\enhance_ops.cu" />
-    <CudaCompile Include="src\imgproc\background\background_ops.cu" />
+    <CudaCompile Include="src\imgproc\background\background_kernels.cu">
+      <Filter>來源檔案\imgproc\background</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\background\background_ops.cu">
+      <Filter>來源檔案\imgproc\background</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\enhance\enhance_kernels.cu">
+      <Filter>來源檔案\imgproc\enhance</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\enhance\enhance_ops.cu">
+      <Filter>來源檔案\imgproc\enhance</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\features\features_kernels.cu">
+      <Filter>來源檔案\imgproc\features</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\features\features_ops.cu">
+      <Filter>來源檔案\imgproc\features</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\filters\filters_kernels.cu">
+      <Filter>來源檔案\imgproc\filters</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\filters\filters_ops.cu">
+      <Filter>來源檔案\imgproc\filters</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\utils\utils_kernels.cu">
+      <Filter>來源檔案\imgproc\utils</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\imgproc\utils\utils_ops.cu">
+      <Filter>來源檔案\imgproc\utils</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\imgcodecs\core_imgcodecs.cpp">
+      <Filter>來源檔案\base</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

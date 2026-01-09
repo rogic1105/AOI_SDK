@@ -1,4 +1,4 @@
-﻿// SmartCanvas.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK.UI\SmartCanvas.cs
 
 using System;
 using System.Drawing;

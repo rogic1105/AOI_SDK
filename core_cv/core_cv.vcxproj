@@ -161,6 +161,8 @@
     <CudaCompile Include="src\imgproc\background\background_kernels.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\core_cv\base\cuda_memory.hpp" />
+    <ClInclude Include="include\core_cv\imgcodecs\core_imgcodecs.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_background.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_enhance.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_features.hpp" />
@@ -172,6 +174,9 @@
     <ClInclude Include="src\imgproc\features\features_kernels.cuh" />
     <ClInclude Include="src\imgproc\filters\filters_kernels.cuh" />
     <ClInclude Include="src\imgproc\utils\utils_kernels.cuh" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\imgcodecs\core_imgcodecs.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

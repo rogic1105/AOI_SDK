@@ -46,8 +46,7 @@ namespace AOI.SDK.TestApp
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblPixelInfo = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.canvasMain = new AOI.SDK.UI.SmartCanvas(); // 這裡引用你的 UI 庫
-
+            this.canvasMain = new AOI.SDK.UI.SmartCanvas();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -60,7 +59,6 @@ namespace AOI.SDK.TestApp
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.canvasMain)).BeginInit();
             this.SuspendLayout();
-
             // 
             // tabControl1
             // 
@@ -105,7 +103,7 @@ namespace AOI.SDK.TestApp
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.canvasMain); // 加入 Canvas
+            this.splitContainer1.Panel2.Controls.Add(this.canvasMain);
             this.splitContainer1.Panel2.Controls.Add(this.statusStrip1);
             this.splitContainer1.Size = new System.Drawing.Size(1051, 525);
             this.splitContainer1.SplitterDistance = 350;
@@ -189,7 +187,7 @@ namespace AOI.SDK.TestApp
             this.numBrightVal.Size = new System.Drawing.Size(160, 29);
             this.numBrightVal.TabIndex = 3;
             this.numBrightVal.Value = new decimal(new int[] {
-            50, // 預設 +50
+            50,
             0,
             0,
             0});
@@ -258,21 +256,8 @@ namespace AOI.SDK.TestApp
             // lblPixelInfo
             // 
             this.lblPixelInfo.Name = "lblPixelInfo";
-            this.lblPixelInfo.Size = new System.Drawing.Size(158, 19);
+            this.lblPixelInfo.Size = new System.Drawing.Size(53, 19);
             this.lblPixelInfo.Text = "Ready";
-            // 
-            // canvasMain
-            // 
-            this.canvasMain.BackColor = System.Drawing.Color.Black;
-            this.canvasMain.Cursor = System.Windows.Forms.Cursors.Cross;
-            this.canvasMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.canvasMain.Image = null;
-            this.canvasMain.Location = new System.Drawing.Point(0, 0);
-            this.canvasMain.Name = "canvasMain";
-            this.canvasMain.Size = new System.Drawing.Size(696, 500);
-            this.canvasMain.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Normal;
-            this.canvasMain.TabIndex = 2;
-            this.canvasMain.TabStop = false;
             // 
             // tabPage2
             // 
@@ -284,6 +269,17 @@ namespace AOI.SDK.TestApp
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Advanced";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // canvasMain
+            // 
+            this.canvasMain.BackColor = System.Drawing.Color.Black;
+            this.canvasMain.Cursor = System.Windows.Forms.Cursors.Cross;
+            this.canvasMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.canvasMain.Location = new System.Drawing.Point(0, 0);
+            this.canvasMain.Name = "canvasMain";
+            this.canvasMain.Size = new System.Drawing.Size(696, 500);
+            this.canvasMain.TabIndex = 2;
+            this.canvasMain.TabStop = false;
             // 
             // Form1
             // 
