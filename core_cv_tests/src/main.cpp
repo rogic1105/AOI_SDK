@@ -1,4 +1,4 @@
-// core_cv_tests/main.cpp
+// AOI_SDK\core_cv_tests\src\main.cpp
 
 #include "framework/test_utils.hpp" 
 

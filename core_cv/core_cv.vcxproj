@@ -163,6 +163,7 @@
   <ItemGroup>
     <ClInclude Include="include\core_cv\base\cuda_memory.hpp" />
     <ClInclude Include="include\core_cv\imgcodecs\core_imgcodecs.hpp" />
+    <ClInclude Include="include\core_cv\imgcodecs\core_imgcodecs_fast.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_background.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_enhance.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_features.hpp" />
@@ -177,6 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\imgcodecs\core_imgcodecs.cpp" />
+    <ClCompile Include="src\imgcodecs\core_imgcodecs_fast.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

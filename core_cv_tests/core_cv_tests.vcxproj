@@ -23,9 +23,6 @@
     <ClCompile Include="src\test_core.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\core_cv_tests\image_utils.hpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\core_cv\core_cv.vcxproj">
       <Project>{b39f6111-258b-48f8-8a3e-f940771a4d52}</Project>
     </ProjectReference>

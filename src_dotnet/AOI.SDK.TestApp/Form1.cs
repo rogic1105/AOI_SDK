@@ -1,35 +1,24 @@
-﻿using System;
+﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\Form1.cs
+
+using AOI.SDK.UI;
+using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks; // 用於 Parallel
 using System.Windows.Forms;
-using AOI.SDK.UI; 
 
 namespace AOI.SDK.TestApp
 {
     public partial class Form1 : Form
     {
         // ---------------------------------------------------------
-        // 1. DLL 匯入 (對應 core_cv_api 的 export_api.cpp)
-        // ---------------------------------------------------------
-        private const string DLL_NAME = "core_cv_api.dll";
-
-
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int CoreCV_Brighten(IntPtr src, int width, int height, int value, IntPtr dst);
-
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int CoreCV_Threshold(IntPtr src, int width, int height, byte threshold, IntPtr dst);
-
-        // 加入 Invert 的宣告
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int CoreCV_Invert(IntPtr src, int width, int height, IntPtr dst);
-
-        // ---------------------------------------------------------
-        // 2. 變數宣告
+        // 變數宣告
         // ---------------------------------------------------------
         private byte[] _originalData; // 原始圖片數據 (8bpp)
-        private byte[] _currentData;  // 目前顯示的圖片數據
+        private byte[] _currentData;  // 目前顯示的圖片數據 (同時作為 Src 和 Dst)
         private int _imgW, _imgH;
 
         public Form1()
@@ -39,7 +28,6 @@ namespace AOI.SDK.TestApp
             // 綁定 SmartCanvas 的滑鼠事件
             canvasMain.PixelHovered += (x, y, color) =>
             {
-                // 顯示座標與灰階值
                 if (x >= 0 && x < _imgW && y >= 0 && y < _imgH)
                 {
                     lblPixelInfo.Text = $"座標: ({x}, {y}) | 亮度: {color.R}";
@@ -48,64 +36,96 @@ namespace AOI.SDK.TestApp
         }
 
         // ---------------------------------------------------------
-        // 3. 讀取圖片
+        // 3. 極速讀取圖片 (Fast IO)
         // ---------------------------------------------------------
         private void btnLoad_Click(object sender, EventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Image Files|*.bmp;*.png;*.jpg;*.tif";
+            ofd.Filter = "BMP Files|*.bmp|All Files|*.*";
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
-                using (Bitmap bmp = new Bitmap(ofd.FileName))
+                int maxW = 16384;
+                int maxH = 10000;
+                ulong maxBytes = (ulong)(maxW * maxH);
+
+                IntPtr pBuffer = CoreCVWrapper.CoreCV_AllocPinned(maxBytes);
+
+                try
                 {
-                    // 強制轉為 8bpp 灰階
-                    _originalData = ConvertTo8bppArray(bmp, out _imgW, out _imgH);
+                    int w, h;
+                    bool success = CoreCVWrapper.CoreCV_FastReadBMP(ofd.FileName, out w, out h, pBuffer, (int)maxBytes);
 
-                    // 初始化目前數據
-                    _currentData = new byte[_originalData.Length];
-                    Array.Copy(_originalData, _currentData, _originalData.Length);
+                    if (success)
+                    {
+                        _imgW = w;
+                        _imgH = h;
+                        int realSize = w * h;
 
-                    // 顯示圖片
-                    ShowImage(_currentData);
+                        _originalData = new byte[realSize];
+                        Marshal.Copy(pBuffer, _originalData, 0, realSize);
 
-                    // 自動縮放
-                    canvasMain.FitToScreen();
+                        _currentData = new byte[realSize];
+                        Array.Copy(_originalData, _currentData, realSize);
+
+                        ShowImage(_currentData);
+                        canvasMain.FitToScreen();
+
+                        // [修改] 更新 TextBox 而不是 Label
+                        txtLoadPath.Text = ofd.FileName;
+                        // 讀取新的圖時，清空 Save Path，避免誤會
+                        txtSavePath.Text = "";
+                    }
+                    else
+                    {
+                        MessageBox.Show("FastRead 失敗！");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("發生錯誤: " + ex.Message);
+                }
+                finally
+                {
+                    CoreCVWrapper.CoreCV_FreePinned(pBuffer);
                 }
             }
         }
 
-        // ---------------------------------------------------------
-        // 4. 功能按鈕
-        // ---------------------------------------------------------
-
-        // 二值化
-        private void btnBinary_Click(object sender, EventArgs e)
+        // 極速存檔
+        private void btnSave_Click(object sender, EventArgs e)
         {
-            // 注意參數轉型: numThreshold.Value 是 decimal，要轉 byte
-            RunProcess((src, dst, w, h) =>
-                CoreCV_Threshold(src, w, h, (byte)numThreshold.Value, dst)
-            );
-        }
+            if (_currentData == null) { MessageBox.Show("沒有圖片可存！"); return; }
 
-        // 變亮
-        private void btnBrighten_Click(object sender, EventArgs e)
-        {
-            RunProcess((src, dst, w, h) =>
-                CoreCV_Brighten(src, w, h, (int)numBrightVal.Value, dst)
-            );
-        }
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "BMP Files|*.bmp";
+            sfd.FileName = "output_fast.bmp";
 
-        // 反轉 (假設你還沒實作 CoreCV_Invert，這裡先註解掉或改用 CPU 實作)
-        private void btnInvert_Click(object sender, EventArgs e)
-        {
-            // 把原本註解掉的程式碼打開，並移除 MessageBox
-            RunProcess((src, dst, w, h) =>
-                CoreCV_Invert(src, w, h, dst)
-            );
-        }
+            if (sfd.ShowDialog() == DialogResult.OK)
+            {
+                GCHandle hData = GCHandle.Alloc(_currentData, GCHandleType.Pinned);
+                try
+                {
+                    IntPtr ptrData = hData.AddrOfPinnedObject();
+                    bool success = CoreCVWrapper.CoreCV_FastWriteBMP(sfd.FileName, _imgW, _imgH, ptrData);
 
-        // 回到原圖
+                    if (success)
+                    {
+                        MessageBox.Show("存檔成功！");
+                        // [修改] 更新 TextBox
+                        txtSavePath.Text = sfd.FileName;
+                    }
+                    else
+                    {
+                        MessageBox.Show("存檔失敗！");
+                    }
+                }
+                finally
+                {
+                    hData.Free();
+                }
+            }
+        }
         private void btnReset_Click(object sender, EventArgs e)
         {
             if (_originalData == null) return;
@@ -113,34 +133,121 @@ namespace AOI.SDK.TestApp
             ShowImage(_currentData);
         }
 
-        // ---------------------------------------------------------
-        // 5. 核心處理邏輯 (包裝指針操作)
-        // ---------------------------------------------------------
+        private void btnOpenLoadDir_Click(object sender, EventArgs e)
+        {
+            OpenFolder(txtLoadPath.Text);
+        }
 
-        // 定義委派
+        private void btnOpenSaveDir_Click(object sender, EventArgs e)
+        {
+            OpenFolder(txtSavePath.Text);
+        }
+
+        private void OpenFolder(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    // 如果檔案存在，開啟資料夾並選取該檔案 (/select)
+                    Process.Start("explorer.exe", "/select,\"" + filePath + "\"");
+                }
+                else
+                {
+                    // 如果檔案不存在但路徑有文字，嘗試開啟其所在的資料夾
+                    string dir = Path.GetDirectoryName(filePath);
+                    if (Directory.Exists(dir))
+                    {
+                        Process.Start("explorer.exe", "\"" + dir + "\"");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("無法開啟資料夾: " + ex.Message);
+            }
+        }
+
+
+
+        // ---------------------------------------------------------
+        // 功能按鈕
+        // ---------------------------------------------------------
+        private void btnBinary_Click(object sender, EventArgs e)
+        {
+            RunProcess((src, dst, w, h) =>
+                CoreCVWrapper.CoreCV_Threshold(src, w, h, (byte)numThreshold.Value, dst)
+            );
+        }
+
+        private void btnBrighten_Click(object sender, EventArgs e)
+        {
+            RunProcess((src, dst, w, h) =>
+                CoreCVWrapper.CoreCV_Brighten(src, w, h, (int)numBrightVal.Value, dst)
+            );
+        }
+
+        private void btnInvert_Click(object sender, EventArgs e)
+        {
+            RunProcess((src, dst, w, h) =>
+                CoreCVWrapper.CoreCV_Invert(src, w, h, dst)
+            );
+        }
+
+        private void btnConvolution_Click(object sender, EventArgs e)
+        {
+            // 定義一個 3x3 銳化 (Sharpen) 遮罩
+            float[] mask = {
+                 0, -1,  0,
+                -1,  5, -1,
+                 0, -1,  0
+            };
+
+            // 鎖定 Mask 記憶體
+            GCHandle hMask = GCHandle.Alloc(mask, GCHandleType.Pinned);
+
+            try
+            {
+                IntPtr ptrMask = hMask.AddrOfPinnedObject();
+
+                // 呼叫 Wrapper
+                RunProcess((src, dst, w, h) =>
+                    CoreCVWrapper.CoreCV_Convolution(src, w, h, ptrMask, 3, dst)
+                );
+            }
+            finally
+            {
+                hMask.Free();
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 核心處理邏輯 (In-Place 處理)
+        // ---------------------------------------------------------
         delegate int DllFunc(IntPtr src, IntPtr dst, int w, int h);
 
         private void RunProcess(DllFunc func)
         {
-            if (_originalData == null) { MessageBox.Show("請先讀取圖片"); return; }
+            if (_originalData == null || _currentData == null)
+            {
+                MessageBox.Show("請先讀取圖片");
+                return;
+            }
 
-            // 鎖定記憶體位置，避免 GC 移動
-            GCHandle hSrc = GCHandle.Alloc(_currentData, GCHandleType.Pinned);
-            // 這裡直接原地修改 (In-place)，所以 Src 和 Dst 指向同一塊記憶體
-            // 如果你的演算法不支援原地修改，你需要 new 一個新的 byte[] 給 hDst
-            GCHandle hDst = GCHandle.Alloc(_currentData, GCHandleType.Pinned);
+            // 因為我們是 In-Place 修改 (Src = Dst = _currentData)，只需要鎖定一個陣列
+            GCHandle hData = GCHandle.Alloc(_currentData, GCHandleType.Pinned);
 
             try
             {
-                IntPtr ptrSrc = hSrc.AddrOfPinnedObject();
-                IntPtr ptrDst = hDst.AddrOfPinnedObject();
+                IntPtr ptrData = hData.AddrOfPinnedObject();
 
-                // 呼叫 C++
-                // 注意：這裡我為了配合你的 RunProcess 簽章，維持 func(src, dst, w, h)
-                // 但實際執行的是上面 Lambda 表達式裡面的 CoreCV_xxx(src, w, h, val, dst)
-                int ret = func(ptrSrc, ptrDst, _imgW, _imgH);
+                // 呼叫 Wrapper
+                // 因為是原地修改，Src 和 Dst 傳同一個指標
+                int ret = func(ptrData, ptrData, _imgW, _imgH);
 
-                if (ret == 0)
+                if (ret == 0) // CORE_CV_SUCCESS
                 {
                     ShowImage(_currentData);
                 }
@@ -151,7 +258,7 @@ namespace AOI.SDK.TestApp
             }
             catch (DllNotFoundException dllEx)
             {
-                MessageBox.Show($"找不到 {DLL_NAME}！\n請確認編譯輸出路徑是否正確。\n" + dllEx.Message);
+                MessageBox.Show($"找不到 core_cv_api.dll！\n請確認編譯輸出路徑是否正確。\n{dllEx.Message}");
             }
             catch (Exception ex)
             {
@@ -159,76 +266,59 @@ namespace AOI.SDK.TestApp
             }
             finally
             {
-                if (hSrc.IsAllocated) hSrc.Free();
-                if (hDst.IsAllocated) hDst.Free();
+                if (hData.IsAllocated) hData.Free();
             }
         }
 
+
         // ---------------------------------------------------------
-        // 顯示與轉檔輔助 (不變)
+        // 顯示與轉檔輔助
         // ---------------------------------------------------------
         private void ShowImage(byte[] data)
         {
             if (_imgW <= 0 || _imgH <= 0) return;
 
+            // 建立 8bpp Bitmap 供顯示
             Bitmap bmp = new Bitmap(_imgW, _imgH, PixelFormat.Format8bppIndexed);
+
+            // 設定調色盤
             ColorPalette pal = bmp.Palette;
             for (int i = 0; i < 256; i++) pal.Entries[i] = Color.FromArgb(i, i, i);
             bmp.Palette = pal;
 
+            // 拷貝數據
             BitmapData bData = bmp.LockBits(new Rectangle(0, 0, _imgW, _imgH),
                 ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
 
-            // 如果 Stride == Width，可以直接 Marshal.Copy
-            // 但為了保險起見，還是逐行複製比較穩
-            for (int y = 0; y < _imgH; y++)
+            try
             {
-                Marshal.Copy(data, y * _imgW, bData.Scan0 + y * bData.Stride, _imgW);
-            }
-
-            bmp.UnlockBits(bData);
-            canvasMain.Image = bmp;
-        }
-
-        private byte[] ConvertTo8bppArray(Bitmap src, out int w, out int h)
-        {
-            w = src.Width;
-            h = src.Height;
-            byte[] result = new byte[w * h];
-
-            using (Bitmap bmp24 = new Bitmap(w, h, PixelFormat.Format24bppRgb))
-            {
-                using (Graphics g = Graphics.FromImage(bmp24))
+                // 若 Stride 等於寬度，可一次拷貝 (通常 8bpp 且寬度是 4 的倍數時)
+                if (bData.Stride == _imgW)
                 {
-                    g.DrawImage(src, 0, 0, w, h);
+                    Marshal.Copy(data, 0, bData.Scan0, data.Length);
                 }
-
-                BitmapData bData = bmp24.LockBits(new Rectangle(0, 0, w, h),
-                    ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-
-                int stride = bData.Stride;
-                byte[] rgbData = new byte[stride * h];
-                Marshal.Copy(bData.Scan0, rgbData, 0, rgbData.Length);
-                bmp24.UnlockBits(bData);
-
-                // [修正] 複製 out 參數到區域變數，給 Lambda 使用
-                int width = w;
-
-                // RGB -> Gray (平行化加速讀取)
-                System.Threading.Tasks.Parallel.For(0, h, y =>
+                else
                 {
-                    // 這裡要把 x < w 改成 x < width
-                    for (int x = 0; x < width; x++)
+                    // 否則逐行拷貝
+                    for (int y = 0; y < _imgH; y++)
                     {
-                        int idx = y * stride + x * 3;
-                        byte B = rgbData[idx];
-                        byte G = rgbData[idx + 1];
-                        byte R = rgbData[idx + 2];
-                        result[y * width + x] = (byte)((R * 0.299) + (G * 0.587) + (B * 0.114));
+                        Marshal.Copy(data, y * _imgW, bData.Scan0 + y * bData.Stride, _imgW);
                     }
-                });
+                }
             }
-            return result;
+            finally
+            {
+                bmp.UnlockBits(bData);
+            }
+
+            // 賦值給 SmartCanvas
+            // 注意：SmartCanvas 內部應該要 Dispose 舊圖，或者這裡手動 Dispose 舊的
+            var oldImg = canvasMain.Image;
+            canvasMain.Image = bmp;
+            if (oldImg != null) oldImg.Dispose();
         }
+
+
+
     }
 }

@@ -22,9 +22,4 @@
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\core_cv_tests\image_utils.hpp">
-      <Filter>標頭檔</Filter>
-    </ClInclude>
-  </ItemGroup>
 </Project>
