@@ -1,9 +1,9 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\Core\GPUProcessor.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK\Core\GPUProcessor.cs
 
 using System;
 using System.Runtime.InteropServices;
 
-namespace AOI.SDK.TestApp.Core
+namespace AOI.SDK.Core
 {
     // 定義 GPU 運算委派
     public delegate int GPUKernelFunc(IntPtr d_src, IntPtr d_dst, int w, int h);

@@ -1,9 +1,9 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\CoreCVWrapper.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK\Core\CoreCVWrapper.cs
 
 using System;
 using System.Runtime.InteropServices;
 
-namespace AOI.SDK.TestApp.Core
+namespace AOI.SDK.Core
 {
     /// <summary>
     /// 封裝 core_cv_api.dll 的原生函式庫

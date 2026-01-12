@@ -1,10 +1,10 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\GPUHelper.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK\Core\GPUHelper.cs
 
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace AOI.SDK.TestApp.Core
+namespace AOI.SDK.Core
 {
     public static class GPUHelper
     {

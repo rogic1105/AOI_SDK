@@ -1,11 +1,12 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\Utils\FileUtils.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK\Utils\FileUtils.cs
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 
-namespace AOI.SDK.TestApp.Utils
+
+namespace AOI.SDK.Utils
 {
     public static class FileUtils
     {

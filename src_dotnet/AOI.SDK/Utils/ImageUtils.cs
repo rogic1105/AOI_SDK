@@ -1,12 +1,11 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\Utils\ImageUtils.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK\Utils\ImageUtils.cs
 
-using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace AOI.SDK.TestApp.Utils
+namespace AOI.SDK.Utils
 {
     public static class ImageUtils
     {

@@ -2,15 +2,11 @@
 
 using System;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-using AOI.SDK.UI;
-using AOI.SDK.TestApp.Core;  // [新增] 引用 Core
-using AOI.SDK.TestApp.Utils; // [新增] 引用 Utils
+using AOI.SDK.Core;
+using AOI.SDK.Utils;
 
 namespace AOI.SDK.TestApp.Forms
 {
