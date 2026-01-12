@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace AOI.SDK.TestApp
+namespace AOI.SDK.TestApp.Core
 {
     /// <summary>
     /// 封裝 core_cv_api.dll 的原生函式庫
@@ -51,5 +51,47 @@ namespace AOI.SDK.TestApp
         // 卷積 (預留)
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int CoreCV_Convolution(IntPtr src, int width, int height, IntPtr mask, int maskSize, IntPtr dst);
+
+        // =========================================================
+        // 4. 進階 GPU 操作 (GPU Resident Mode)
+        // =========================================================
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_MallocGPU(out IntPtr d_ptr, int width, int height);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_FreeGPU(IntPtr d_ptr);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Upload(IntPtr h_src, IntPtr d_dst, int width, int height);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Download(IntPtr d_src, IntPtr h_dst, int width, int height);
+
+        // 純 GPU 版本
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Brighten_GPU(IntPtr d_src, int width, int height, int value, IntPtr d_dst);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Threshold_GPU(IntPtr d_src, int width, int height, byte threshold, IntPtr d_dst);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Invert_GPU(IntPtr d_src, int width, int height, IntPtr d_dst);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Convolution_GPU(IntPtr d_src, int width, int height, IntPtr d_mask, int maskSize, IntPtr d_dst);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_MallocGPU_Float(out IntPtr d_ptr, int count);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_FreeGPU_Float(IntPtr d_ptr);
+
+        // h_src 傳 float[] 即可，.NET 會自動 Marshal
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CoreCV_Upload_Float(float[] h_src, IntPtr d_dst, int count);
+
+
+
     }
 }

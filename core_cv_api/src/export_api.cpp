@@ -182,4 +182,77 @@ extern "C" {
         }
     }
 
+    // ------------ GPU 記憶體管理 ---------------
+    CORE_CV_API int CoreCV_MallocGPU(unsigned char** d_ptr, int width, int height) {
+        size_t size = (size_t)width * height;
+        CHECK_CUDA(cudaMalloc((void**)d_ptr, size));
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_FreeGPU(unsigned char* d_ptr) {
+        if (d_ptr) CHECK_CUDA(cudaFree(d_ptr));
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_Upload(const unsigned char* h_src, unsigned char* d_dst, int width, int height) {
+        size_t size = (size_t)width * height;
+        // 如果 h_src 是 Pinned Memory，這裡會跑 Async DMA
+        CHECK_CUDA(cudaMemcpy(d_dst, h_src, size, cudaMemcpyHostToDevice));
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_Download(const unsigned char* d_src, unsigned char* h_dst, int width, int height) {
+        size_t size = (size_t)width * height;
+        CHECK_CUDA(cudaMemcpy(h_dst, d_src, size, cudaMemcpyDeviceToHost));
+        return CORE_CV_SUCCESS;
+    }
+
+    // --- 純 GPU 運算 (極速版) ---
+    CORE_CV_API int CoreCV_Brighten_GPU(const uint8_t* d_src, int width, int height, int value, uint8_t* d_dst) {
+        // 沒有 Malloc，沒有 Memcpy，只有 Kernel Launch
+        core::brighten_u8_gpu(d_src, d_dst, width, height, value, 0);
+        // 不做 Sync，讓 CPU 可以馬上量測 Launch 時間 (或做 Sync 量測執行時間)
+        CHECK_CUDA(cudaDeviceSynchronize());
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_Threshold_GPU(const uint8_t* d_src, int width, int height, uint8_t threshold, uint8_t* d_dst) {
+        core::threshold_u8_gpu(d_src, d_dst, width, height, threshold, 0);
+        CHECK_CUDA(cudaDeviceSynchronize());
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_Invert_GPU(const uint8_t* d_src, int width, int height, uint8_t* d_dst) {
+        core::invert_u8_gpu(d_src, d_dst, width, height, 0);
+        CHECK_CUDA(cudaDeviceSynchronize());
+        return CORE_CV_SUCCESS;
+    }
+
+    // 注意：Mask 也必須已經在 GPU 上
+    CORE_CV_API int CoreCV_Convolution_GPU(const uint8_t* d_src, int width, int height, const float* d_mask, int mask_size, uint8_t* d_dst) {
+        core::convolution_u8_gpu(d_src, d_dst, width, height, d_mask, mask_size, 0);
+        CHECK_CUDA(cudaDeviceSynchronize());
+        return CORE_CV_SUCCESS;
+    }
+
+    // --- [新增] Float 資源實作 ---
+    CORE_CV_API int CoreCV_MallocGPU_Float(float** d_ptr, int count) {
+        size_t size = (size_t)count * sizeof(float);
+        CHECK_CUDA(cudaMalloc((void**)d_ptr, size));
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_FreeGPU_Float(float* d_ptr) {
+        if (d_ptr) CHECK_CUDA(cudaFree(d_ptr));
+        return CORE_CV_SUCCESS;
+    }
+
+    CORE_CV_API int CoreCV_Upload_Float(const float* h_src, float* d_dst, int count) {
+        size_t size = (size_t)count * sizeof(float);
+        CHECK_CUDA(cudaMemcpy(d_dst, h_src, size, cudaMemcpyHostToDevice));
+        return CORE_CV_SUCCESS;
+    }
+
 }
+
+

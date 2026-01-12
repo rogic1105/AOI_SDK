@@ -1,8 +1,8 @@
 ﻿// AOI_SDK\src_dotnet\AOI.SDK.TestApp\Form1.Designer.cs
 
-namespace AOI.SDK.TestApp
+namespace AOI.SDK.TestApp.Forms
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// 設計工具所需的變數。
@@ -33,8 +33,18 @@ namespace AOI.SDK.TestApp
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.lblSaveTime = new System.Windows.Forms.Label();
+            this.lblLoadTime = new System.Windows.Forms.Label();
+            this.btnOpenLoadDir = new System.Windows.Forms.Button();
+            this.btnOpenSaveDir = new System.Windows.Forms.Button();
+            this.txtSavePath = new System.Windows.Forms.TextBox();
+            this.txtLoadPath = new System.Windows.Forms.TextBox();
             this.btnSave = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.lblConvTime = new System.Windows.Forms.Label();
+            this.lblInvertTime = new System.Windows.Forms.Label();
+            this.lblBrightenTime = new System.Windows.Forms.Label();
+            this.lblBinaryTime = new System.Windows.Forms.Label();
             this.numBrightVal = new System.Windows.Forms.NumericUpDown();
             this.btnConvolution = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
@@ -49,10 +59,6 @@ namespace AOI.SDK.TestApp
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblPixelInfo = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.txtLoadPath = new System.Windows.Forms.TextBox();
-            this.txtSavePath = new System.Windows.Forms.TextBox();
-            this.btnOpenSaveDir = new System.Windows.Forms.Button();
-            this.btnOpenLoadDir = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -100,6 +106,8 @@ namespace AOI.SDK.TestApp
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.lblSaveTime);
+            this.splitContainer1.Panel1.Controls.Add(this.lblLoadTime);
             this.splitContainer1.Panel1.Controls.Add(this.btnOpenLoadDir);
             this.splitContainer1.Panel1.Controls.Add(this.btnOpenSaveDir);
             this.splitContainer1.Panel1.Controls.Add(this.txtSavePath);
@@ -118,6 +126,64 @@ namespace AOI.SDK.TestApp
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 0;
             // 
+            // lblSaveTime
+            // 
+            this.lblSaveTime.AutoSize = true;
+            this.lblSaveTime.Location = new System.Drawing.Point(284, 98);
+            this.lblSaveTime.Name = "lblSaveTime";
+            this.lblSaveTime.Size = new System.Drawing.Size(45, 15);
+            this.lblSaveTime.TabIndex = 13;
+            this.lblSaveTime.Text = "0.0 ms";
+            // 
+            // lblLoadTime
+            // 
+            this.lblLoadTime.AutoSize = true;
+            this.lblLoadTime.Location = new System.Drawing.Point(284, 26);
+            this.lblLoadTime.Name = "lblLoadTime";
+            this.lblLoadTime.Size = new System.Drawing.Size(45, 15);
+            this.lblLoadTime.TabIndex = 12;
+            this.lblLoadTime.Text = "0.0 ms";
+            // 
+            // btnOpenLoadDir
+            // 
+            this.btnOpenLoadDir.Location = new System.Drawing.Point(133, 19);
+            this.btnOpenLoadDir.Margin = new System.Windows.Forms.Padding(4);
+            this.btnOpenLoadDir.Name = "btnOpenLoadDir";
+            this.btnOpenLoadDir.Size = new System.Drawing.Size(67, 29);
+            this.btnOpenLoadDir.TabIndex = 11;
+            this.btnOpenLoadDir.Text = "📂";
+            this.btnOpenLoadDir.UseVisualStyleBackColor = true;
+            this.btnOpenLoadDir.Click += new System.EventHandler(this.btnOpenLoadDir_Click);
+            // 
+            // btnOpenSaveDir
+            // 
+            this.btnOpenSaveDir.Location = new System.Drawing.Point(133, 91);
+            this.btnOpenSaveDir.Margin = new System.Windows.Forms.Padding(4);
+            this.btnOpenSaveDir.Name = "btnOpenSaveDir";
+            this.btnOpenSaveDir.Size = new System.Drawing.Size(67, 29);
+            this.btnOpenSaveDir.TabIndex = 10;
+            this.btnOpenSaveDir.Text = "📂";
+            this.btnOpenSaveDir.UseVisualStyleBackColor = true;
+            this.btnOpenSaveDir.Click += new System.EventHandler(this.btnOpenSaveDir_Click);
+            // 
+            // txtSavePath
+            // 
+            this.txtSavePath.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.txtSavePath.Location = new System.Drawing.Point(16, 127);
+            this.txtSavePath.Name = "txtSavePath";
+            this.txtSavePath.ReadOnly = true;
+            this.txtSavePath.Size = new System.Drawing.Size(226, 29);
+            this.txtSavePath.TabIndex = 9;
+            // 
+            // txtLoadPath
+            // 
+            this.txtLoadPath.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.txtLoadPath.Location = new System.Drawing.Point(16, 55);
+            this.txtLoadPath.Name = "txtLoadPath";
+            this.txtLoadPath.ReadOnly = true;
+            this.txtLoadPath.Size = new System.Drawing.Size(226, 29);
+            this.txtLoadPath.TabIndex = 8;
+            // 
             // btnSave
             // 
             this.btnSave.Location = new System.Drawing.Point(16, 91);
@@ -131,6 +197,10 @@ namespace AOI.SDK.TestApp
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.lblConvTime);
+            this.groupBox2.Controls.Add(this.lblInvertTime);
+            this.groupBox2.Controls.Add(this.lblBrightenTime);
+            this.groupBox2.Controls.Add(this.lblBinaryTime);
             this.groupBox2.Controls.Add(this.numBrightVal);
             this.groupBox2.Controls.Add(this.btnConvolution);
             this.groupBox2.Controls.Add(this.label2);
@@ -146,9 +216,45 @@ namespace AOI.SDK.TestApp
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "IMP";
             // 
+            // lblConvTime
+            // 
+            this.lblConvTime.AutoSize = true;
+            this.lblConvTime.Location = new System.Drawing.Point(268, 140);
+            this.lblConvTime.Name = "lblConvTime";
+            this.lblConvTime.Size = new System.Drawing.Size(45, 15);
+            this.lblConvTime.TabIndex = 17;
+            this.lblConvTime.Text = "0.0 ms";
+            // 
+            // lblInvertTime
+            // 
+            this.lblInvertTime.AutoSize = true;
+            this.lblInvertTime.Location = new System.Drawing.Point(268, 103);
+            this.lblInvertTime.Name = "lblInvertTime";
+            this.lblInvertTime.Size = new System.Drawing.Size(45, 15);
+            this.lblInvertTime.TabIndex = 16;
+            this.lblInvertTime.Text = "0.0 ms";
+            // 
+            // lblBrightenTime
+            // 
+            this.lblBrightenTime.AutoSize = true;
+            this.lblBrightenTime.Location = new System.Drawing.Point(268, 66);
+            this.lblBrightenTime.Name = "lblBrightenTime";
+            this.lblBrightenTime.Size = new System.Drawing.Size(45, 15);
+            this.lblBrightenTime.TabIndex = 15;
+            this.lblBrightenTime.Text = "0.0 ms";
+            // 
+            // lblBinaryTime
+            // 
+            this.lblBinaryTime.AutoSize = true;
+            this.lblBinaryTime.Location = new System.Drawing.Point(268, 29);
+            this.lblBinaryTime.Name = "lblBinaryTime";
+            this.lblBinaryTime.Size = new System.Drawing.Size(45, 15);
+            this.lblBinaryTime.TabIndex = 14;
+            this.lblBinaryTime.Text = "0.0 ms";
+            // 
             // numBrightVal
             // 
-            this.numBrightVal.Location = new System.Drawing.Point(221, 96);
+            this.numBrightVal.Location = new System.Drawing.Point(150, 59);
             this.numBrightVal.Margin = new System.Windows.Forms.Padding(4);
             this.numBrightVal.Maximum = new decimal(new int[] {
             255,
@@ -171,28 +277,28 @@ namespace AOI.SDK.TestApp
             // 
             // btnConvolution
             // 
-            this.btnConvolution.Location = new System.Drawing.Point(14, 134);
+            this.btnConvolution.Location = new System.Drawing.Point(7, 133);
             this.btnConvolution.Margin = new System.Windows.Forms.Padding(4);
             this.btnConvolution.Name = "btnConvolution";
-            this.btnConvolution.Size = new System.Drawing.Size(100, 29);
+            this.btnConvolution.Size = new System.Drawing.Size(66, 29);
             this.btnConvolution.TabIndex = 6;
-            this.btnConvolution.Text = "Convolution";
+            this.btnConvolution.Text = "Conv";
             this.btnConvolution.UseVisualStyleBackColor = true;
             this.btnConvolution.Click += new System.EventHandler(this.btnConvolution_Click);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(132, 103);
+            this.label2.Location = new System.Drawing.Point(90, 66);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(67, 15);
+            this.label2.Size = new System.Drawing.Size(37, 15);
             this.label2.TabIndex = 1;
-            this.label2.Text = "亮度增量";
+            this.label2.Text = "增量";
             // 
             // numThreshold
             // 
-            this.numThreshold.Location = new System.Drawing.Point(221, 27);
+            this.numThreshold.Location = new System.Drawing.Point(150, 22);
             this.numThreshold.Margin = new System.Windows.Forms.Padding(4);
             this.numThreshold.Maximum = new decimal(new int[] {
             255,
@@ -210,10 +316,10 @@ namespace AOI.SDK.TestApp
             // 
             // btnBrighten
             // 
-            this.btnBrighten.Location = new System.Drawing.Point(11, 96);
+            this.btnBrighten.Location = new System.Drawing.Point(7, 59);
             this.btnBrighten.Margin = new System.Windows.Forms.Padding(4);
             this.btnBrighten.Name = "btnBrighten";
-            this.btnBrighten.Size = new System.Drawing.Size(100, 29);
+            this.btnBrighten.Size = new System.Drawing.Size(66, 29);
             this.btnBrighten.TabIndex = 4;
             this.btnBrighten.Text = "Brighten";
             this.btnBrighten.UseVisualStyleBackColor = true;
@@ -221,10 +327,10 @@ namespace AOI.SDK.TestApp
             // 
             // btnInvert
             // 
-            this.btnInvert.Location = new System.Drawing.Point(11, 59);
+            this.btnInvert.Location = new System.Drawing.Point(7, 96);
             this.btnInvert.Margin = new System.Windows.Forms.Padding(4);
             this.btnInvert.Name = "btnInvert";
-            this.btnInvert.Size = new System.Drawing.Size(100, 29);
+            this.btnInvert.Size = new System.Drawing.Size(66, 29);
             this.btnInvert.TabIndex = 3;
             this.btnInvert.Text = "Invert";
             this.btnInvert.UseVisualStyleBackColor = true;
@@ -233,7 +339,7 @@ namespace AOI.SDK.TestApp
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(132, 29);
+            this.label1.Location = new System.Drawing.Point(90, 29);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(52, 15);
@@ -242,10 +348,10 @@ namespace AOI.SDK.TestApp
             // 
             // btnBinary
             // 
-            this.btnBinary.Location = new System.Drawing.Point(14, 22);
+            this.btnBinary.Location = new System.Drawing.Point(7, 22);
             this.btnBinary.Margin = new System.Windows.Forms.Padding(4);
             this.btnBinary.Name = "btnBinary";
-            this.btnBinary.Size = new System.Drawing.Size(100, 29);
+            this.btnBinary.Size = new System.Drawing.Size(66, 29);
             this.btnBinary.TabIndex = 2;
             this.btnBinary.Text = "Binary";
             this.btnBinary.UseVisualStyleBackColor = true;
@@ -313,46 +419,6 @@ namespace AOI.SDK.TestApp
             this.tabPage2.Text = "Advanced";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // txtLoadPath
-            // 
-            this.txtLoadPath.Location = new System.Drawing.Point(16, 55);
-            this.txtLoadPath.Name = "txtLoadPath";
-            this.txtLoadPath.Size = new System.Drawing.Size(313, 29);
-            this.txtLoadPath.TabIndex = 8;
-            this.txtLoadPath.ReadOnly = true;
-            this.txtLoadPath.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            // 
-            // txtSavePath
-            // 
-            this.txtSavePath.Location = new System.Drawing.Point(16, 127);
-            this.txtSavePath.Name = "txtSavePath";
-            this.txtSavePath.Size = new System.Drawing.Size(313, 29);
-            this.txtSavePath.TabIndex = 9;
-            this.txtSavePath.ReadOnly = true;
-            this.txtSavePath.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            // 
-            // btnOpenSaveDir
-            // 
-            this.btnOpenSaveDir.Location = new System.Drawing.Point(133, 91);
-            this.btnOpenSaveDir.Margin = new System.Windows.Forms.Padding(4);
-            this.btnOpenSaveDir.Name = "btnOpenSaveDir";
-            this.btnOpenSaveDir.Size = new System.Drawing.Size(67, 29);
-            this.btnOpenSaveDir.TabIndex = 10;
-            this.btnOpenSaveDir.Text = "📂";
-            this.btnOpenSaveDir.UseVisualStyleBackColor = true;
-            this.btnOpenSaveDir.Click += new System.EventHandler(this.btnOpenSaveDir_Click);
-            // 
-            // btnOpenLoadDir
-            // 
-            this.btnOpenLoadDir.Location = new System.Drawing.Point(133, 19);
-            this.btnOpenLoadDir.Margin = new System.Windows.Forms.Padding(4);
-            this.btnOpenLoadDir.Name = "btnOpenLoadDir";
-            this.btnOpenLoadDir.Size = new System.Drawing.Size(67, 29);
-            this.btnOpenLoadDir.TabIndex = 11;
-            this.btnOpenLoadDir.Text = "📂";
-            this.btnOpenLoadDir.UseVisualStyleBackColor = true;
-            this.btnOpenLoadDir.Click += new System.EventHandler(this.btnOpenLoadDir_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
@@ -406,5 +472,11 @@ namespace AOI.SDK.TestApp
         private System.Windows.Forms.Button btnOpenSaveDir;
         private System.Windows.Forms.TextBox txtSavePath;
         private System.Windows.Forms.TextBox txtLoadPath;
+        private System.Windows.Forms.Label lblSaveTime;
+        private System.Windows.Forms.Label lblLoadTime;
+        private System.Windows.Forms.Label lblBrightenTime;
+        private System.Windows.Forms.Label lblBinaryTime;
+        private System.Windows.Forms.Label lblConvTime;
+        private System.Windows.Forms.Label lblInvertTime;
     }
 }
