@@ -52,6 +52,7 @@
     <Compile Include="Core\CoreCVWrapper.cs" />
     <Compile Include="Core\GPUHelper.cs" />
     <Compile Include="Core\GPUProcessor.cs" />
+    <Compile Include="Core\Models\TimedResult.cs" />
     <Compile Include="UI\SmartCanvas.cs">
       <SubType>Component</SubType>
     </Compile>

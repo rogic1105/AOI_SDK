@@ -10,7 +10,7 @@ using AOI.SDK.Utils;
 
 namespace AOI.SDK.TestApp.Forms
 {
-    public partial class MainForm : Form
+    public partial class SdkForm : Form
     {
         // ---------------------------------------------------------
         // 變數宣告
@@ -21,7 +21,7 @@ namespace AOI.SDK.TestApp.Forms
 
         private GPUProcessor _gpu = new GPUProcessor();
 
-        public MainForm()
+        public SdkForm()
         {
             InitializeComponent();
 

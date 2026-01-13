@@ -2,7 +2,7 @@
 
 namespace AOI.SDK.TestApp.Forms
 {
-    partial class MainForm
+    partial class SdkForm
     {
         /// <summary>
         /// 設計工具所需的變數。
@@ -82,7 +82,7 @@ namespace AOI.SDK.TestApp.Forms
             this.tabControl1.Margin = new System.Windows.Forms.Padding(4);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(1138, 543);
+            this.tabControl1.Size = new System.Drawing.Size(1121, 538);
             this.tabControl1.TabIndex = 0;
             // 
             // tabPage1
@@ -92,7 +92,7 @@ namespace AOI.SDK.TestApp.Forms
             this.tabPage1.Margin = new System.Windows.Forms.Padding(4);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPage1.Size = new System.Drawing.Size(1130, 514);
+            this.tabPage1.Size = new System.Drawing.Size(1113, 509);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Unit Test";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -121,8 +121,8 @@ namespace AOI.SDK.TestApp.Forms
             // 
             this.splitContainer1.Panel2.Controls.Add(this.canvasMain);
             this.splitContainer1.Panel2.Controls.Add(this.statusStrip1);
-            this.splitContainer1.Size = new System.Drawing.Size(1122, 506);
-            this.splitContainer1.SplitterDistance = 372;
+            this.splitContainer1.Size = new System.Drawing.Size(1105, 501);
+            this.splitContainer1.SplitterDistance = 366;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 0;
             // 
@@ -386,7 +386,7 @@ namespace AOI.SDK.TestApp.Forms
             this.canvasMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.canvasMain.Location = new System.Drawing.Point(0, 0);
             this.canvasMain.Name = "canvasMain";
-            this.canvasMain.Size = new System.Drawing.Size(745, 481);
+            this.canvasMain.Size = new System.Drawing.Size(734, 476);
             this.canvasMain.TabIndex = 2;
             this.canvasMain.TabStop = false;
             // 
@@ -395,10 +395,10 @@ namespace AOI.SDK.TestApp.Forms
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblPixelInfo});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 481);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 476);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 19, 0);
-            this.statusStrip1.Size = new System.Drawing.Size(745, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(734, 25);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -414,19 +414,19 @@ namespace AOI.SDK.TestApp.Forms
             this.tabPage2.Margin = new System.Windows.Forms.Padding(4);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPage2.Size = new System.Drawing.Size(1130, 514);
+            this.tabPage2.Size = new System.Drawing.Size(1113, 509);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Advanced";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // Form1
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1138, 543);
+            this.ClientSize = new System.Drawing.Size(1121, 538);
             this.Controls.Add(this.tabControl1);
             this.Margin = new System.Windows.Forms.Padding(4);
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "AOI SDK Test";
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
