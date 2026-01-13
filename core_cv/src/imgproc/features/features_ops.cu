@@ -22,9 +22,10 @@ namespace core {
         float sigma,
         const char* mode_str,
         cudaStream_t s,
-        uint8_t* d_temp_blur_u8, // 外部傳入
-        float* d_temp_blur_f32,  // 外部傳入
-        float* d_temp_response   // 外部傳入
+        uint8_t* d_temp_blur_u8,
+        float* d_temp_blur_f32,
+        float* d_temp_response,
+        void* d_workspace // [新增] 接收參數
     ) {
         int num_pixels = W * H;
         int gridSize, blockSize;
@@ -33,14 +34,12 @@ namespace core {
         if (strcmp(mode_str, "horizontal") == 0) mode = RidgeMode::HORIZONTAL;
         else if (strcmp(mode_str, "both") == 0) mode = RidgeMode::BOTH;
 
-        // 1. 執行 Gaussian Blur
-        // 這裡我們直接用 d_temp_blur_u8 當作輸出
-        // 注意：Gaussian 內部可能也需要一點 workspace，如果 core_filters 支援傳 null 讓它自己解決(通常很小)，就傳 null
-        // 或者我們可以給它 d_temp_response 當 workspace (因為這時候還沒用到 response)
         int ksize = (int)(6.0f * sigma + 1.0f);
         if (ksize % 2 == 0) ksize++;
 
-        core::gaussianBlur_u8_gpu(d_in, d_temp_blur_u8, W, H, sigma, ksize, s, nullptr);
+        // [關鍵修改] 將 d_workspace 傳進去！
+        // 這樣 gaussianBlur 就會使用預分配好的記憶體，不再 cudaMalloc
+        core::gaussianBlur_u8_gpu(d_in, d_temp_blur_u8, W, H, sigma, ksize, s, d_workspace);
 
         // 2. 轉 Float
         core::convert_u8_to_f32_gpu(d_temp_blur_u8, d_temp_blur_f32, num_pixels, s);

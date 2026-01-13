@@ -156,6 +156,8 @@
     <CudaCompile Include="src\imgproc\features\features_ops.cu" />
     <CudaCompile Include="src\imgproc\filters\filters_kernels.cu" />
     <CudaCompile Include="src\imgproc\filters\filters_ops.cu" />
+    <CudaCompile Include="src\imgproc\transform\transform_kernels.cu" />
+    <CudaCompile Include="src\imgproc\transform\transform_ops.cu" />
     <CudaCompile Include="src\imgproc\utils\utils_kernels.cu" />
     <CudaCompile Include="src\imgproc\utils\utils_ops.cu" />
     <CudaCompile Include="src\imgproc\background\background_kernels.cu" />
@@ -169,11 +171,13 @@
     <ClInclude Include="include\core_cv\imgproc\core_features.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_filters.hpp" />
     <ClInclude Include="include\core_cv\base\cuda_utils.hpp" />
+    <ClInclude Include="include\core_cv\imgproc\core_transform.hpp" />
     <ClInclude Include="include\core_cv\imgproc\core_utils.hpp" />
     <ClInclude Include="src\imgproc\background\background_kernels.cuh" />
     <ClInclude Include="src\imgproc\enhance\enhance_kernels.cuh" />
     <ClInclude Include="src\imgproc\features\features_kernels.cuh" />
     <ClInclude Include="src\imgproc\filters\filters_kernels.cuh" />
+    <ClInclude Include="src\imgproc\transform\transform_kernels.cuh" />
     <ClInclude Include="src\imgproc\utils\utils_kernels.cuh" />
   </ItemGroup>
   <ItemGroup>

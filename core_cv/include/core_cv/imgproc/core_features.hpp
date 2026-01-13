@@ -13,6 +13,17 @@ namespace core {
     };
 
     void sobel_u8_gpu(const uint8_t* d_in, uint8_t* d_out, int W, int H, cudaStream_t s = 0);
-    void hessianRidge_u8_gpu(const uint8_t* d_in, uint8_t* d_out, int W, int H, float sigma, const char* mode_str, cudaStream_t s, uint8_t* t1, float* t2, float* t3);
+    void hessianRidge_u8_gpu(
+        const uint8_t* d_in,
+        uint8_t* d_out,
+        int W, int H,
+        float sigma,
+        const char* mode_str,
+        cudaStream_t s,
+        uint8_t* d_temp_blur_u8,
+        float* d_temp_blur_f32,
+        float* d_temp_response,
+        void* d_workspace = nullptr // [新增] 接收外部 workspace
+    );
 
 }

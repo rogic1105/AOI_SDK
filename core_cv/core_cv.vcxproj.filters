@@ -90,6 +90,10 @@
     <ClInclude Include="include\core_cv\imgcodecs\core_imgcodecs_fast.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgproc\transform\transform_kernels.cuh" />
+    <ClInclude Include="include\core_cv\imgproc\core_transform.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\imgproc\background\background_kernels.cu">
@@ -122,6 +126,8 @@
     <CudaCompile Include="src\imgproc\utils\utils_ops.cu">
       <Filter>來源檔案\imgproc\utils</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\imgproc\transform\transform_kernels.cu" />
+    <CudaCompile Include="src\imgproc\transform\transform_ops.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\imgcodecs\core_imgcodecs.cpp">
