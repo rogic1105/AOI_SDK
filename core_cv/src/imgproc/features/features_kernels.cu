@@ -46,7 +46,7 @@ namespace core {
         out[idx] = (uint8_t)(mag + 0.5f);
     }
 
-    __global__ void k_hessianResponse(const float* __restrict__ img, float* __restrict__ out, int W, int H, RidgeMode mode) {
+    __global__ void k_hessianResponse(const float* __restrict__ img, float* __restrict__ out, int W, int H, detectionMode mode) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx >= W * H) return;
 
@@ -73,20 +73,20 @@ namespace core {
         float val_yy = 0.0f;
 
         // Lxx (Vertical features)
-        if (mode == RidgeMode::VERTICAL || mode == RidgeMode::BOTH) {
+        if (mode == detectionMode::VERTICAL || mode == detectionMode::BOTH) {
             val_xx = (p00 + p02 + p20 + p22) + 2.0f * (p10 + p12) - 2.0f * (p01 + p21) - 4.0f * p11;
             // 注意：上面的 mask 簡化寫法其實等於 Sobel(2,0)，標準是 1, -2, 1 卷積
             val_xx = (p00 - 2 * p01 + p02) + 2 * (p10 - 2 * p11 + p12) + (p20 - 2 * p21 + p22);
         }
 
         // Lyy (Horizontal features)
-        if (mode == RidgeMode::HORIZONTAL || mode == RidgeMode::BOTH) {
+        if (mode == detectionMode::HORIZONTAL || mode == detectionMode::BOTH) {
             val_yy = (p00 - 2 * p10 + p20) + 2 * (p01 - 2 * p11 + p21) + (p02 - 2 * p12 + p22);
         }
 
         float response = 0.0f;
-        if (mode == RidgeMode::VERTICAL) response = fabsf(val_xx);
-        else if (mode == RidgeMode::HORIZONTAL) response = fabsf(val_yy);
+        if (mode == detectionMode::VERTICAL) response = fabsf(val_xx);
+        else if (mode == detectionMode::HORIZONTAL) response = fabsf(val_yy);
         else response = fabsf(val_xx) + fabsf(val_yy);
 
         out[idx] = response;

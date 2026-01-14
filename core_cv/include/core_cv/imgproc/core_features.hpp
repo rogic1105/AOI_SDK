@@ -6,7 +6,7 @@
 
 namespace core {
     // 定義 Ridge Mode (公開給使用者看)
-    enum class RidgeMode {
+    enum class detectionMode {
         VERTICAL = 0,
         HORIZONTAL = 1,
         BOTH = 2

@@ -30,9 +30,9 @@ namespace core {
         int num_pixels = W * H;
         int gridSize, blockSize;
 
-        RidgeMode mode = RidgeMode::VERTICAL;
-        if (strcmp(mode_str, "horizontal") == 0) mode = RidgeMode::HORIZONTAL;
-        else if (strcmp(mode_str, "both") == 0) mode = RidgeMode::BOTH;
+        detectionMode mode = detectionMode::VERTICAL;
+        if (strcmp(mode_str, "horizontal") == 0) mode = detectionMode::HORIZONTAL;
+        else if (strcmp(mode_str, "both") == 0) mode = detectionMode::BOTH;
 
         int ksize = (int)(6.0f * sigma + 1.0f);
         if (ksize % 2 == 0) ksize++;
