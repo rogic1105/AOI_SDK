@@ -43,7 +43,6 @@ namespace core {
         dst[idx] = (uint8_t)val;
     }
 
-
     __global__ void k_u8_to_f32(const uint8_t* __restrict__ in, float* __restrict__ out, int N) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx < N) out[idx] = (float)in[idx];
@@ -64,6 +63,75 @@ namespace core {
             out[idx] = (uint8_t)val;
         }
     }
+
+    __device__ inline void get_jet_color(uint8_t v, float& b, float& g, float& r) {
+        float val = v / 255.0f;
+
+        // Jet 近似公式
+        // Base value = 1.5 - |4*val - shift|
+        float b_val = 1.5f - fabsf(4.0f * val - 1.0f);
+        float g_val = 1.5f - fabsf(4.0f * val - 2.0f);
+        float r_val = 1.5f - fabsf(4.0f * val - 3.0f);
+
+        // Clamp to [0, 1]
+        b = fmaxf(0.0f, fminf(1.0f, b_val));
+        g = fmaxf(0.0f, fminf(1.0f, g_val));
+        r = fmaxf(0.0f, fminf(1.0f, r_val));
+
+    }
+
+
+    __global__ void k_overlay_heatmap(
+        const uint8_t* __restrict__ src,
+        const uint8_t* __restrict__ overlay,
+        uint8_t* __restrict__ dst,
+        int width, int height,
+        int lower_limit,
+        float alpha
+    ) {
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+        int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= width || y >= height) return;
+
+        int idx = y * width + x;
+
+        uint8_t src_val = src[idx];
+        uint8_t ov_val = overlay[idx];
+
+        // 邏輯: mask_indices = (overlay_image <= lower_limit)
+        // 若在 mask 內，只顯示原圖 (轉 BGR)
+        if (ov_val <= lower_limit) {
+            dst[idx * 3 + 0] = src_val; // B
+            dst[idx * 3 + 1] = src_val; // G
+            dst[idx * 3 + 2] = src_val; // R
+        }
+        else {
+            // 計算 Heatmap 顏色
+            float h_r, h_g, h_b;
+            get_jet_color(ov_val, h_r, h_g, h_b); // 0.0~1.0
+
+            // 混合: result = src * alpha + heatmap * (1 - alpha)
+            // Python代碼中 src_bgr 是灰階轉成的BGR，所以 src_r = src_g = src_b = src_val
+            float beta = 1.0f - alpha;
+            float s_v = (float)src_val;
+
+            // B channel
+            float out_b = s_v * alpha + (h_b * 255.0f) * beta;
+            // G channel
+            float out_g = s_v * alpha + (h_g * 255.0f) * beta;
+            // R channel
+            float out_r = s_v * alpha + (h_r * 255.0f) * beta;
+
+            // 寫回 (Clamp 0-255)
+            dst[idx * 3 + 0] = (uint8_t)fminf(255.0f, fmaxf(0.0f, out_b));
+            dst[idx * 3 + 1] = (uint8_t)fminf(255.0f, fmaxf(0.0f, out_g));
+            dst[idx * 3 + 2] = (uint8_t)fminf(255.0f, fmaxf(0.0f, out_r));
+        }
+
+    }
+
+
 
 
 }

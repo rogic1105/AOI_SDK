@@ -17,5 +17,14 @@ namespace core {
     
     void normalize_minmax_f32_u8_gpu(const float* d_in, uint8_t* d_out, int N, cudaStream_t s = 0);
 
+    void overlay_heatmap_gpu(
+        const uint8_t* d_src,
+        const uint8_t* d_overlay,
+        uint8_t* d_out_bgr,
+        int width, int height,
+        int lower_limit = 0,
+        float alpha = 0.5f,
+        cudaStream_t stream = 0
+    );
 }
 

@@ -71,4 +71,26 @@ namespace core {
         CUDA_CHECK(cudaGetLastError());
     }
 
+    void overlay_heatmap_gpu(
+        const uint8_t* d_src,
+        const uint8_t* d_overlay,
+        uint8_t* d_out_bgr,
+        int width, int height,
+        int lower_limit,
+        float alpha,
+        cudaStream_t stream
+    ) {
+        dim3 grid, block;
+        get_optimal_launch_2d(k_overlay_heatmap, width, height, grid, block);
+        k_overlay_heatmap << < grid, block, 0, stream >> > (
+            d_src,
+            d_overlay,
+            d_out_bgr,
+            width, height,
+            lower_limit,
+            alpha
+            );
+        CUDA_CHECK(cudaGetLastError());
+    }
+
 }
