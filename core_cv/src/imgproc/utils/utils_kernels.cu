@@ -29,6 +29,21 @@ namespace core {
         out[idx] = (uint8_t)(val + 0.5f); // 四雪五入
     }
 
+    __global__ void k_scale_clamp_f32_to_u8(const float* src, uint8_t* dst, int num_pixels, float scale_factor) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= num_pixels) return;
+
+        float val = src[idx] * scale_factor;
+
+        // Clipping (0.0 ~ 255.0)
+        if (val < 0.0f) val = 0.0f;
+        if (val > 255.0f) val = 255.0f;
+
+        // astype(np.uint8) 行為 (Truncation)
+        dst[idx] = (uint8_t)val;
+    }
+
+
     __global__ void k_u8_to_f32(const uint8_t* __restrict__ in, float* __restrict__ out, int N) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
         if (idx < N) out[idx] = (float)in[idx];

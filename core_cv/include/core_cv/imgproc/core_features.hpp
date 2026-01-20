@@ -6,24 +6,23 @@
 
 namespace core {
     // 定義 Ridge Mode (公開給使用者看)
-    enum class detectionMode {
-        VERTICAL = 0,
-        HORIZONTAL = 1,
-        BOTH = 2
-    };
+    enum class detectionMode {VERTICAL = 0, HORIZONTAL = 1, BOTH = 2 };
 
     void sobel_u8_gpu(const uint8_t* d_in, uint8_t* d_out, int W, int H, cudaStream_t s = 0);
+
+    void computeHessianResponse_gpu(const float* d_src, float* d_dst, int width, int height, detectionMode mode, cudaStream_t stream);
+    
     void hessianRidge_u8_gpu(
         const uint8_t* d_in,
         uint8_t* d_out,
         int W, int H,
         float sigma,
         const char* mode_str,
-        cudaStream_t s,
-        uint8_t* d_temp_blur_u8,
+        float fixed_max_val,
         float* d_temp_blur_f32,
         float* d_temp_response,
-        void* d_workspace = nullptr // [新增] 接收外部 workspace
+        cudaStream_t s,
+        void* d_workspace = nullptr
     );
 
 }

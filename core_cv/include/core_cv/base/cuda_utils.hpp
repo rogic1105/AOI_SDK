@@ -17,24 +17,52 @@
 // [新增] VSCode IntelliSense Fix
 // 讓編輯器看得懂 __global__, blockIdx 等關鍵字，不影響實際編譯
 // =========================================================
-#ifdef __INTELLISENSE__
+#if defined(__INTELLISENSE__) || defined(__RESHARPER__)
+
+    // 1. 基礎關鍵字欺騙
 #ifndef __CUDACC__
 #define __CUDACC__
 #endif
+
 #define __global__
 #define __device__
 #define __host__
 #define __forceinline__
+#define __noinline__
 #define __shared__
+#define __constant__
+#define __managed__
+#define __restrict__
+
+// 2. 核心同步函式
 inline void __syncthreads() {}
+inline void __threadfence() {}
 inline void __threadfence_block() {}
-template<class T> inline T __clz(const T val) { return val; }
-struct __device_builtin__ dim3 { int x; int y; int z; };
-typedef struct dim3 dim3;
-extern dim3 blockIdx;
-extern dim3 blockDim;
-extern dim3 threadIdx;
-extern dim3 gridDim;
+inline void __threadfence_system() {}
+
+// 3. 核心索引變數 (模擬 dim3 結構)
+struct __cuda_fake_dim3 { unsigned int x, y, z; };
+extern __cuda_fake_dim3 gridDim;
+extern __cuda_fake_dim3 blockDim;
+extern __cuda_fake_dim3 blockIdx;
+extern __cuda_fake_dim3 threadIdx;
+extern int warpSize;
+
+// 4. 常用數學與原子操作 (Atomic)
+// 為了讓 IDE 不會報錯 "atomicAdd undefined"
+template<typename T> inline T atomicAdd(T* address, T val) { return *address; }
+template<typename T> inline T atomicSub(T* address, T val) { return *address; }
+template<typename T> inline T atomicExch(T* address, T val) { return *address; }
+template<typename T> inline T atomicMin(T* address, T val) { return *address; }
+template<typename T> inline T atomicMax(T* address, T val) { return *address; }
+template<typename T> inline T atomicCAS(T* address, T compare, T val) { return *address; }
+
+// 5. 其他 CUDA 內建函式
+inline void __sincosf(float x, float* s, float* c) {}
+inline float __fdividef(float x, float y) { return x / y; }
+// 如果有用到 __launch_bounds__
+#define __launch_bounds__(max_threads_per_block, min_blocks_per_multiprocessor)
+
 #endif
 // =========================================================
 

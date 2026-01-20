@@ -5,13 +5,13 @@
 #include <cuda_runtime.h>
 
 namespace core {
-    // 1D Column 統計背景
-    void calcColumnBackground_u8_gpu(const uint8_t* d_in, uint8_t* d_bg_out, int W, int H, float sigmaFactor, cudaStream_t s = 0);
 
-    // 背景擴展 (將 1D 或小圖擴展為全尺寸背景)
-    void expandBackground_u8_gpu(const uint8_t* d_bg_in, uint8_t* d_img_out, int W, int H, cudaStream_t s = 0);
+    void calcColumnBackground_u8_gpu(const uint8_t* d_in, const float* d_mean, uint8_t* d_out, int W, int H, cudaStream_t s);
 
-    // 背景去除運算
-    void subtractBackgroundShift_u8_gpu(const uint8_t* d_in, const uint8_t* d_bg, uint8_t* d_out, int W, int H, cudaStream_t s = 0);
-    void subtractBackgroundAbs_u8_gpu(const uint8_t* d_in, const uint8_t* d_bg, uint8_t* d_out, int W, int H, cudaStream_t s = 0);
+    // 改為 Template
+    template <typename T>
+    void calcColumnMeans_RemoveOutliers_gpu(const T* d_in, float* d_out, int W, int H, float sigma_threshold, cudaStream_t stream);
+
+    template <typename T>
+    void calcColumnMeans_gpu(const T* d_in, float* d_out, int W, int H, cudaStream_t stream, void* d_workspace);
 }

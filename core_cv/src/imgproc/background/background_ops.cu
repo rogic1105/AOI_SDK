@@ -1,50 +1,48 @@
 // AOI_SDK\core_cv\src\imgproc\background\background_ops.cu
 
 #include "core_cv/base/cuda_utils.hpp"
+#include "core_cv/imgproc/core_background.hpp"
 #include "background_kernels.cuh"
-#include <vector>
-#include <cmath>
-#include <thrust/device_ptr.h>
-#include <thrust/extrema.h>
-#include <thrust/execution_policy.h>
-
+#include <cstdint>
 
 namespace core {
 
-    void calcColumnBackground_u8_gpu(const uint8_t* d_in, uint8_t* d_bg_out, int W, int H, float sigmaFactor, cudaStream_t s) {
-        // 這個 Kernel 每個 Thread 處理一個 Column，所以總量是 W
+    // 1. 一般平均 Host Function
+    template <typename T>
+    void calcColumnMeans_gpu(const T* d_in, float* d_out, int W, int H, cudaStream_t stream, void* d_workspace) {
         int gridSize, blockSize;
-        get_optimal_launch_1d(k_calcColumnBackground_u8, W, gridSize, blockSize);
-        k_calcColumnBackground_u8 << <gridSize, blockSize, 0, s >> > (d_in, d_bg_out, W, H, sigmaFactor);
+        get_optimal_launch_1d(k_calcColumnMeans<T>, W, gridSize, blockSize);
+        k_calcColumnMeans<T> << <gridSize, blockSize, 0, stream >> > (d_in, d_out, W, H);
         CUDA_CHECK(cudaGetLastError());
     }
 
-    void expandBackground_u8_gpu(const uint8_t* d_bg_in, uint8_t* d_img_out, int W, int H, cudaStream_t s) {
-        // 這個 Kernel 處理所有像素，所以總量是 N
-        int N = W * H;
+    // 2. [修改] 去除離群值 Host Function (改為泛型)
+    template <typename T>
+    void calcColumnMeans_RemoveOutliers_gpu(const T* d_in, float* d_out, int W, int H, float sigma, cudaStream_t stream) {
         int gridSize, blockSize;
-        get_optimal_launch_1d(k_expandBackground_u8, N, gridSize, blockSize);
-        k_expandBackground_u8 << <gridSize, blockSize, 0, s >> > (d_bg_in, d_img_out, W, H);
+        get_optimal_launch_1d(k_calcColumnMeans_RemoveOutliers<T>, W, gridSize, blockSize);
+        k_calcColumnMeans_RemoveOutliers<T> << <gridSize, blockSize, 0, stream >> > (d_in, d_out, W, H, sigma);
         CUDA_CHECK(cudaGetLastError());
     }
 
-    void subtractBackgroundShift_u8_gpu(const uint8_t* d_in, const uint8_t* d_bg, uint8_t* d_out, int W, int H, cudaStream_t s) {
-        // 這個 Kernel 處理所有像素，所以總量是 N
-        int N = W * H;
-        int gridSize, blockSize;
-        get_optimal_launch_1d(k_subtractBackgroundShift_u8, N, gridSize, blockSize);
-        k_subtractBackgroundShift_u8 << <gridSize, blockSize, 0, s >> > (d_in, d_bg, d_out, W, H);
+    // 3. 背景相減 Host Function
+    void calcColumnBackground_u8_gpu(const uint8_t* d_in, const float* d_mean, uint8_t* d_out, int W, int H, cudaStream_t s) {
+        dim3 gridDim, blockDim;
+        get_optimal_launch_2d(k_calcColumnBackground, W, H, gridDim, blockDim);
+        k_calcColumnBackground << <gridDim, blockDim, 0, s >> > (d_in, d_mean, d_out, W, H);
         CUDA_CHECK(cudaGetLastError());
     }
 
-    void subtractBackgroundAbs_u8_gpu(const uint8_t* d_in, const uint8_t* d_bg, uint8_t* d_out, int W, int H, cudaStream_t s) {
-        // 這個 Kernel 處理所有像素，所以總量是 N
-        int N = W * H;
-        int gridSize, blockSize;
-        get_optimal_launch_1d(k_subtractBackgroundAbs_u8, N, gridSize, blockSize);
-        k_subtractBackgroundAbs_u8 << <gridSize, blockSize, 0, s >> > (d_in, d_bg, d_out, W, H);
-        CUDA_CHECK(cudaGetLastError());
-    }
+    // =========================================================
+    // 顯式實例化 (Explicit Instantiation)
+    // 確保 Linker 找得到 uint8_t 和 float 版本的實作
+    // =========================================================
 
+    // 一般平均
+    template void calcColumnMeans_gpu<uint8_t>(const uint8_t*, float*, int, int, cudaStream_t, void*);
+    template void calcColumnMeans_gpu<float>(const float*, float*, int, int, cudaStream_t, void*);
 
+    // [新增] 去除離群值平均
+    template void calcColumnMeans_RemoveOutliers_gpu<uint8_t>(const uint8_t*, float*, int, int, float, cudaStream_t);
+    template void calcColumnMeans_RemoveOutliers_gpu<float>(const float*, float*, int, int, float, cudaStream_t);
 }

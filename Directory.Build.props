@@ -17,4 +17,13 @@
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
 
+	<ItemDefinitionGroup>
+		<ClCompile>
+			<AdditionalIncludeDirectories>$(CoreCVPath)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+		</ClCompile>
+		<CudaCompile>
+			<Include>$(CoreCVPath)src;%(Include)</Include>
+		</CudaCompile>
+	</ItemDefinitionGroup>
+
 </Project>

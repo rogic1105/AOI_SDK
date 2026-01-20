@@ -11,6 +11,8 @@ namespace core {
 
     void convert_f32_to_u8_clamp_gpu(const float* d_in, uint8_t* d_out, int N, cudaStream_t s = 0);
     
+    void scale_clamp_f32_to_u8_gpu(const float* d_in, uint8_t* d_out, int num_pixels, float scale_factor, cudaStream_t stream = 0);
+
     void convert_u8_to_f32_gpu(const uint8_t* d_in, float* d_out, int N, cudaStream_t s = 0);
     
     void normalize_minmax_f32_u8_gpu(const float* d_in, uint8_t* d_out, int N, cudaStream_t s = 0);

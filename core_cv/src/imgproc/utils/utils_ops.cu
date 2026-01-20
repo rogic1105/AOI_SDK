@@ -27,6 +27,14 @@ namespace core {
         CUDA_CHECK(cudaGetLastError());
     }
 
+    void scale_clamp_f32_to_u8_gpu(const float* d_in, uint8_t* d_out, int num_pixels, float scale_factor, cudaStream_t stream) {
+        int gridSize, blockSize;
+
+        get_optimal_launch_1d(k_scale_clamp_f32_to_u8, num_pixels, gridSize, blockSize);
+        k_scale_clamp_f32_to_u8 << < gridSize, blockSize, 0, stream >> > (d_in, d_out, num_pixels, scale_factor);
+        CUDA_CHECK(cudaGetLastError());
+    }
+
     // ¸ê®ÆÂà´«: Uint8 -> Float
     void convert_u8_to_f32_gpu(const uint8_t* d_in, float* d_out, int N, cudaStream_t s) {
         int gridSize, blockSize;

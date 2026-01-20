@@ -1,8 +1,8 @@
-// AOI_SDK\core_cv\src\imgproc\features\features_ops.cu
+// AOI_SDK\core_cv\src\imgproc\features\features_kernels.cuh
 
 #include "core_cv/base/cuda_utils.hpp"
 #include "features_kernels.cuh"
-
+#include "imgproc/utils/utils_kernels.cuh"
 #include "core_cv/imgproc/core_filters.hpp"
 #include "core_cv/imgproc/core_utils.hpp"
 
@@ -15,43 +15,56 @@ namespace core {
         CUDA_CHECK(cudaGetLastError());
     }
 
+    void computeHessianResponse_gpu(
+        const float* d_src,
+        float* d_dst,
+        int width,
+        int height,
+        detectionMode mode,
+        cudaStream_t stream
+    ) {
+        int num_pixels = width * height;
+        int grid, block;
+
+        // 將底層的 launch 邏輯封裝在這裡
+        get_optimal_launch_1d(k_hessianResponse, num_pixels, grid, block);
+        k_hessianResponse << < grid, block, 0, stream >> > (d_src, d_dst, width, height, mode);
+
+        // 這裡可以做 Error Check
+        CUDA_CHECK(cudaGetLastError());
+    }
+
     void hessianRidge_u8_gpu(
         const uint8_t* d_in,
         uint8_t* d_out,
         int W, int H,
         float sigma,
         const char* mode_str,
-        cudaStream_t s,
-        uint8_t* d_temp_blur_u8,
+        float fixed_max_val,
         float* d_temp_blur_f32,
         float* d_temp_response,
-        void* d_workspace // [新增] 接收參數
+        cudaStream_t s,
+        void* d_workspace
+
     ) {
         int num_pixels = W * H;
         int gridSize, blockSize;
 
+
+        // 高斯去雜訊
+        int ksize = (int)(6.0f * sigma + 1.0f);
+        if (ksize % 2 == 0) ksize++;
+        core::gaussianBlur_gpu<uint8_t, float>(d_in, d_temp_blur_f32, W, H, sigma, ksize, s, d_workspace);
+
         detectionMode mode = detectionMode::VERTICAL;
         if (strcmp(mode_str, "horizontal") == 0) mode = detectionMode::HORIZONTAL;
         else if (strcmp(mode_str, "both") == 0) mode = detectionMode::BOTH;
+        core::computeHessianResponse_gpu(d_temp_blur_f32, d_temp_response, W, H, mode, s);
 
-        int ksize = (int)(6.0f * sigma + 1.0f);
-        if (ksize % 2 == 0) ksize++;
+        float scale_factor = 255.0f / fixed_max_val;
+        core::scale_clamp_f32_to_u8_gpu(d_temp_response, d_out, num_pixels, scale_factor, s);
 
-        // [關鍵修改] 將 d_workspace 傳進去！
-        // 這樣 gaussianBlur 就會使用預分配好的記憶體，不再 cudaMalloc
-        core::gaussianBlur_u8_gpu(d_in, d_temp_blur_u8, W, H, sigma, ksize, s, d_workspace);
-
-        // 2. 轉 Float
-        core::convert_u8_to_f32_gpu(d_temp_blur_u8, d_temp_blur_f32, num_pixels, s);
-
-        // 3. 計算 Hessian Response
-        get_optimal_launch_1d(k_hessianResponse, num_pixels, gridSize, blockSize);
-        k_hessianResponse << <gridSize, blockSize, 0, s >> > (d_temp_blur_f32, d_temp_response, W, H, mode);
-
-        // 4. 正規化 MinMax 並轉回 Uint8
-        core::normalize_minmax_f32_u8_gpu(d_temp_response, d_out, num_pixels, s);
-
-        // [移除] 所有的 cudaMalloc 和 cudaFree，這裡只做運算，極致快速且安全
     }
+
 
 }
