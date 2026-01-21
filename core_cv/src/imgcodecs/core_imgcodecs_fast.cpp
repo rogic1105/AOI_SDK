@@ -120,4 +120,78 @@ namespace core {
 
         return readCount == dataSize;
     }
+
+#pragma pack(push, 1)
+    struct BMPHeader {
+        uint16_t bfType{ 0x4D42 };       // 'BM'
+        uint32_t bfSize{ 0 };            // File size
+        uint16_t bfReserved1{ 0 };
+        uint16_t bfReserved2{ 0 };
+        uint32_t bfOffBits{ 54 };        // Offset to image data
+        uint32_t biSize{ 40 };           // Info header size
+        int32_t  biWidth{ 0 };
+        int32_t  biHeight{ 0 };
+        uint16_t biPlanes{ 1 };
+        uint16_t biBitCount{ 24 };       // 24-bit
+        uint32_t biCompression{ 0 };
+        uint32_t biSizeImage{ 0 };
+        int32_t  biXPelsPerMeter{ 0 };
+        int32_t  biYPelsPerMeter{ 0 };
+        uint32_t biClrUsed{ 0 };
+        uint32_t biClrImportant{ 0 };
+    };
+#pragma pack(pop)
+
+    void fast_write_bmp_24bit(const std::string& filepath, int width, int height, const uint8_t* pData) {
+        if (!pData) return;
+
+        // 計算 Row Padding (BMP 每一行必須是 4 bytes 的倍數)
+        int row_stride = width * 3;
+        int padding_size = (4 - (row_stride % 4)) % 4;
+        int padded_stride = row_stride + padding_size;
+
+        size_t data_size = (size_t)padded_stride * height;
+        size_t file_size = sizeof(BMPHeader) + data_size;
+
+        BMPHeader header;
+        header.bfSize = (uint32_t)file_size;
+        header.biWidth = width;
+        header.biHeight = -height; // 負值代表 Top-down (由上往下)，正值為 Bottom-up
+        // 注意：若原圖是正向，這邊設 -height 可直接寫入；若有些檢視器不支援，可設正值但要倒著寫
+        // 大多數現代檢視器都支援 Top-down BMP。
+        header.biSizeImage = (uint32_t)data_size;
+
+        FILE* fp = nullptr;
+#ifdef _WIN32
+        fopen_s(&fp, filepath.c_str(), "wb");
+#else
+        fp = fopen(filepath.c_str(), "wb");
+#endif
+
+        if (!fp) {
+            std::cerr << "Failed to open file for writing: " << filepath << "\n";
+            return;
+        }
+
+        // 1. 寫入 Header
+        fwrite(&header, sizeof(BMPHeader), 1, fp);
+
+        // 2. 寫入 Data (包含 Padding)
+        if (padding_size == 0) {
+            // 如果剛好對齊，直接整塊寫入 (最快)
+            fwrite(pData, 1, (size_t)width * height * 3, fp);
+        }
+        else {
+            // 需要 Padding，逐行寫入
+            std::vector<uint8_t> padBytes(padding_size, 0);
+            for (int y = 0; y < height; ++y) {
+                const uint8_t* row_ptr = pData + (size_t)y * row_stride;
+                fwrite(row_ptr, 1, row_stride, fp);
+                fwrite(padBytes.data(), 1, padding_size, fp);
+            }
+        }
+
+        fclose(fp);
+    }
+
 }

@@ -14,4 +14,7 @@ namespace core {
     // 極速寫入 BMP (僅支援 8-bit 灰階)
     // 直接把 buffer 寫入硬碟
     bool fast_write_bmp_8bit(const std::string& filepath, int w, int h, const uint8_t* data);
+
+    void fast_write_bmp_24bit(const std::string& filepath, int width, int height, const uint8_t* pData);
+
 }
