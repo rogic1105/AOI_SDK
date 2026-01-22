@@ -16,6 +16,14 @@ namespace core {
         CUDA_CHECK(cudaGetLastError());
     }
 
+    template <typename T>
+    void calcColumnMax_gpu(const T* d_in, float* d_out, int W, int H, cudaStream_t stream) {
+        int gridSize, blockSize;
+        get_optimal_launch_1d(k_calcColumnMax<T>, W, gridSize, blockSize);
+        k_calcColumnMax<T> << <gridSize, blockSize, 0, stream >> > (d_in, d_out, W, H);
+        CUDA_CHECK(cudaGetLastError());
+    }
+
     // 2. [修改] 去除離群值 Host Function (改為泛型)
     template <typename T>
     void calcColumnMeans_RemoveOutliers_gpu(const T* d_in, float* d_out, int W, int H, float sigma, cudaStream_t stream) {
@@ -42,7 +50,10 @@ namespace core {
     template void calcColumnMeans_gpu<uint8_t>(const uint8_t*, float*, int, int, cudaStream_t, void*);
     template void calcColumnMeans_gpu<float>(const float*, float*, int, int, cudaStream_t, void*);
 
-    // [新增] 去除離群值平均
+    template void calcColumnMax_gpu<uint8_t>(const uint8_t*, float*, int, int, cudaStream_t);
+    template void calcColumnMax_gpu<float>(const float*, float*, int, int, cudaStream_t);
+
+    // 去除離群值平均
     template void calcColumnMeans_RemoveOutliers_gpu<uint8_t>(const uint8_t*, float*, int, int, float, cudaStream_t);
     template void calcColumnMeans_RemoveOutliers_gpu<float>(const float*, float*, int, int, float, cudaStream_t);
 }

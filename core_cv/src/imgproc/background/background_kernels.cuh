@@ -14,6 +14,13 @@ namespace core {
         int W, int H
     );
 
+    template <typename T>
+    __global__ void k_calcColumnMax(
+        const T* __restrict__ src,
+        float* __restrict__ dst,
+        int W, int H
+    );
+
     // [修改] 去除離群值平均 (改為泛型，支援 uint8 和 float)
     template <typename T>
     __global__ void k_calcColumnMeans_RemoveOutliers(

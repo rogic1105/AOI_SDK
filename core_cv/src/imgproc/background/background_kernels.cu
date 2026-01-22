@@ -45,6 +45,41 @@ namespace core {
         dst[col] = (float)sum / (float)H;
     }
 
+    template <typename T>
+    __global__ void k_calcColumnMax(
+        const T* __restrict__ src,
+        float* __restrict__ dst,
+        int W, int H
+    ) {
+        int col = blockIdx.x * blockDim.x + threadIdx.x;
+        if (col >= W) return;
+        if (src == nullptr || dst == nullptr) return;
+
+        // 防呆：如果高度為0，設為0
+        if (H <= 0) {
+            dst[col] = 0.0f;
+            return;
+        }
+
+        // 1. 以第一個 row 的值作為初始最大值
+        // 這裡直接轉型為 float 進行比較，與 dst 類型一致
+        float max_val = (float)src[col];
+
+        // 2. 遍歷剩下的 row
+        for (int y = 1; y < H; ++y) {
+            size_t idx = (size_t)y * W + col;
+            float val = (float)src[idx];
+            if (val > max_val) {
+                max_val = val;
+            }
+        }
+
+        // 3. 寫入結果
+        dst[col] = max_val;
+    }
+
+
+
     // 2. [修改] 去除離群值 Kernel (泛型化)
     template <typename T>
     __global__ void k_calcColumnMeans_RemoveOutliers(
@@ -132,6 +167,9 @@ namespace core {
 
     template __global__ void k_calcColumnMeans<uint8_t>(const uint8_t* __restrict__, float* __restrict__, int, int);
     template __global__ void k_calcColumnMeans<float>(const float* __restrict__, float* __restrict__, int, int);
+
+    template __global__ void k_calcColumnMax<uint8_t>(const uint8_t* __restrict__, float* __restrict__, int, int);
+    template __global__ void k_calcColumnMax<float>(const float* __restrict__, float* __restrict__, int, int);
 
     template __global__ void k_calcColumnMeans_RemoveOutliers<uint8_t>(const uint8_t* __restrict__, float* __restrict__, int, int, float);
     template __global__ void k_calcColumnMeans_RemoveOutliers<float>(const float* __restrict__, float* __restrict__, int, int, float);
