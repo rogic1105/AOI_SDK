@@ -16,7 +16,7 @@ namespace AOI.SDK.TestApp.Forms
         // 變數宣告
         // ---------------------------------------------------------
         private byte[] _originalData; // 原始圖片數據 (8bpp)
-        private byte[] _currentData;  // 目前顯示的圖片數據 (同時作為 Src 和 Dst)
+        private byte[] _currentData;  // 目前顯示的圖片數據
         private int _imgW, _imgH;
 
         private GPUProcessor _gpu = new GPUProcessor();
@@ -25,16 +25,19 @@ namespace AOI.SDK.TestApp.Forms
         {
             InitializeComponent();
 
-            // 非同步執行 GPU 暖身，避免程式啟動時卡頓
+            // 非同步執行 GPU 暖身
             _ = GPUHelper.WarmUpAsync();
 
-            // 綁定 SmartCanvas 的滑鼠事件 (顯示像素數值)
-            canvasMain.PixelHovered += (x, y, color) =>
+            // [修改] 綁定 SmartCanvas 的 StatusChanged 事件
+            // 配合 SmartCanvas 的更新，顯示完整的座標、亮度、縮放倍率與平移位置
+            canvasMain.StatusChanged += (info) =>
             {
-                if (x >= 0 && x < _imgW && y >= 0 && y < _imgH)
-                {
-                    lblPixelInfo.Text = $"座標: ({x}, {y}) | 亮度: {color.R}";
-                }
+                // SmartCanvas 內部已經處理過座標邊界與有效性 (ImageX/Y 是最後一次有效位置)
+                // 直接顯示 CanvasInfo 提供的資訊即可
+                lblPixelInfo.Text = $"座標: ({info.ImageX}, {info.ImageY}) | " +
+                                    $"亮度: {info.PixelColor.R} | " +
+                                    $"倍率: {info.Zoom:F5}x | " +
+                                    $"平移: ({info.PanOffset.X:F0}, {info.PanOffset.Y:F0})";
             };
         }
 

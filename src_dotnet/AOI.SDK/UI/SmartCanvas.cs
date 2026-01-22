@@ -1,4 +1,4 @@
-﻿// AOI_SDK\src_dotnet\AOI.SDK\UI\SmartCanvas.cs
+﻿// AOI_SDK\src_dotnet\AOI.SDK.UI\SmartCanvas.cs
 
 using System;
 using System.Drawing;
@@ -7,14 +7,32 @@ using System.Windows.Forms;
 
 namespace AOI.SDK.UI
 {
+    public class CanvasInfo
+    {
+        public int ImageX { get; set; }
+        public int ImageY { get; set; }
+        public Color PixelColor { get; set; }
+        public float Zoom { get; set; }
+        public PointF PanOffset { get; set; }
+    }
+
     public class SmartCanvas : PictureBox
     {
         private float _zoom = 1.0f;
-        private PointF _panOffset = PointF.Empty; // 改用 PointF 提高運算精度
+        private PointF _panOffset = PointF.Empty;
         private bool _isDragging = false;
         private Point _lastMousePos;
 
-        public event Action<int, int, Color> PixelHovered;
+        private int _lastImgX = 0;
+        private int _lastImgY = 0;
+        private Color _lastColor = Color.Black;
+
+        public event Action<CanvasInfo> StatusChanged;
+
+        public float Zoom => _zoom;
+        public PointF PanOffset => _panOffset;
+
+        public Action<object, object, object> PixelHovered { get; set; }
 
         public SmartCanvas()
         {
@@ -24,31 +42,41 @@ namespace AOI.SDK.UI
             this.BackColor = Color.Black;
         }
 
-        // 1. [新增] 自動縮放至視窗大小
+        private void TriggerStatusChange()
+        {
+            StatusChanged?.Invoke(new CanvasInfo
+            {
+                ImageX = _lastImgX,
+                ImageY = _lastImgY,
+                PixelColor = _lastColor,
+                Zoom = _zoom,
+                PanOffset = _panOffset
+            });
+        }
+
+        // [新增] 設定視圖 (用於還原上一次的縮放與平移)
+        public void SetView(float zoom, PointF panOffset)
+        {
+            _zoom = zoom;
+            _panOffset = panOffset;
+            this.Invalidate();
+            TriggerStatusChange(); // 更新外部狀態列
+        }
+
         public void FitToScreen()
         {
             if (this.Image == null) return;
 
-            // 計算寬高比，取較小的那個作為縮放比，確保整張圖都看得到
             float ratioW = (float)this.Width / this.Image.Width;
             float ratioH = (float)this.Height / this.Image.Height;
-            _zoom = Math.Min(ratioW, ratioH);
+            _zoom = Math.Min(ratioW, ratioH) * 0.95f;
 
-            // 稍微留一點邊距 (95%)
-            _zoom *= 0.95f;
-
-            // 計算置中偏移量
             float drawW = this.Image.Width * _zoom;
             float drawH = this.Image.Height * _zoom;
             _panOffset = new PointF((this.Width - drawW) / 2, (this.Height - drawH) / 2);
 
             this.Invalidate();
-        }
-
-        // 重置視野 (保留原本的方法，但通常用 FitToScreen 比較多)
-        public void ResetView()
-        {
-            FitToScreen();
+            TriggerStatusChange();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -73,17 +101,14 @@ namespace AOI.SDK.UI
 
             if (_isDragging)
             {
-                // 拖曳平移
                 _panOffset.X += e.X - _lastMousePos.X;
                 _panOffset.Y += e.Y - _lastMousePos.Y;
                 _lastMousePos = e.Location;
                 this.Invalidate();
             }
 
-            // 顯示數值
             if (this.Image != null && this.Image is Bitmap bmp)
             {
-                // 反算座標: (Mouse - Offset) / Zoom
                 float imgXf = (e.X - _panOffset.X) / _zoom;
                 float imgYf = (e.Y - _panOffset.Y) / _zoom;
                 int imgX = (int)imgXf;
@@ -91,13 +116,15 @@ namespace AOI.SDK.UI
 
                 if (imgX >= 0 && imgX < bmp.Width && imgY >= 0 && imgY < bmp.Height)
                 {
-                    Color c = bmp.GetPixel(imgX, imgY);
-                    PixelHovered?.Invoke(imgX, imgY, c);
+                    _lastImgX = imgX;
+                    _lastImgY = imgY;
+                    _lastColor = bmp.GetPixel(imgX, imgY);
                 }
+
+                TriggerStatusChange();
             }
         }
 
-        // 2. [修改] 滾輪縮放：以滑鼠為中心
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             float oldZoom = _zoom;
@@ -106,18 +133,16 @@ namespace AOI.SDK.UI
             if (e.Delta > 0) _zoom *= factor;
             else _zoom /= factor;
 
-            // 限制縮放範圍
             if (_zoom < 0.01f) _zoom = 0.01f;
             if (_zoom > 100.0f) _zoom = 100.0f;
 
-            // === 關鍵數學：保持滑鼠指向的圖片點不動 ===
-            // 公式：NewOffset = Mouse - (Mouse - OldOffset) * (NewZoom / OldZoom)
             float scaleChange = _zoom / oldZoom;
 
             _panOffset.X = e.X - (e.X - _panOffset.X) * scaleChange;
             _panOffset.Y = e.Y - (e.Y - _panOffset.Y) * scaleChange;
 
             this.Invalidate();
+            TriggerStatusChange();
         }
 
         protected override void OnPaint(PaintEventArgs pe)
@@ -130,7 +155,6 @@ namespace AOI.SDK.UI
             float drawW = this.Image.Width * _zoom;
             float drawH = this.Image.Height * _zoom;
 
-            // 繪製圖片
             pe.Graphics.DrawImage(this.Image, _panOffset.X, _panOffset.Y, drawW, drawH);
         }
     }
