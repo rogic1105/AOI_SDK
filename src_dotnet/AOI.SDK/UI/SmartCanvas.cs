@@ -29,10 +29,14 @@ namespace AOI.SDK.UI
 
         public event Action<CanvasInfo> StatusChanged;
 
+        // [新增] 邊緣觸發事件 (int direction: -1=上一張, 1=下一張)
+        public event Action<int> EdgeReached;
+
+        // [新增] 避免重複觸發的冷卻旗標
+        private bool _edgeTriggeredInDrag = false;
+
         public float Zoom => _zoom;
         public PointF PanOffset => _panOffset;
-
-        public Action<object, object, object> PixelHovered { get; set; }
 
         public SmartCanvas()
         {
@@ -54,13 +58,12 @@ namespace AOI.SDK.UI
             });
         }
 
-        // [新增] 設定視圖 (用於還原上一次的縮放與平移)
         public void SetView(float zoom, PointF panOffset)
         {
             _zoom = zoom;
             _panOffset = panOffset;
             this.Invalidate();
-            TriggerStatusChange(); // 更新外部狀態列
+            TriggerStatusChange();
         }
 
         public void FitToScreen()
@@ -86,6 +89,7 @@ namespace AOI.SDK.UI
             {
                 _isDragging = true;
                 _lastMousePos = e.Location;
+                _edgeTriggeredInDrag = false; // 重置觸發旗標
             }
         }
 
@@ -105,23 +109,62 @@ namespace AOI.SDK.UI
                 _panOffset.Y += e.Y - _lastMousePos.Y;
                 _lastMousePos = e.Location;
                 this.Invalidate();
+
+                // [新增] 檢查是否拉到邊界
+                CheckEdgeTrigger();
             }
 
-            if (this.Image != null && this.Image is Bitmap bmp)
+            if (this.Image != null)
             {
                 float imgXf = (e.X - _panOffset.X) / _zoom;
                 float imgYf = (e.Y - _panOffset.Y) / _zoom;
-                int imgX = (int)imgXf;
-                int imgY = (int)imgYf;
 
-                if (imgX >= 0 && imgX < bmp.Width && imgY >= 0 && imgY < bmp.Height)
+                _lastImgX = (int)imgXf;
+                _lastImgY = (int)imgYf;
+
+                if (this.Image is Bitmap bmp &&
+                    _lastImgX >= 0 && _lastImgX < bmp.Width &&
+                    _lastImgY >= 0 && _lastImgY < bmp.Height)
                 {
-                    _lastImgX = imgX;
-                    _lastImgY = imgY;
-                    _lastColor = bmp.GetPixel(imgX, imgY);
+                    _lastColor = bmp.GetPixel(_lastImgX, _lastImgY);
+                }
+                else
+                {
+                    _lastColor = Color.Black;
                 }
 
                 TriggerStatusChange();
+            }
+        }
+
+        // [新增] 檢查邊界邏輯
+        private void CheckEdgeTrigger()
+        {
+            if (this.Image == null || _edgeTriggeredInDrag) return;
+
+            float drawW = this.Image.Width * _zoom;
+            float imageRightEdgeX = _panOffset.X + drawW;
+
+            // 觸發門檻值 (例如 50 pixel)
+            float threshold = 50.0f;
+
+            // 1. 往左拉 (想看右邊/下一張)
+            // 當圖片的「右邊緣」已經非常接近畫布的左邊界 (甚至進入負值)
+            // 代表使用者已經快要把這張圖拉完了
+            if (imageRightEdgeX < threshold)
+            {
+                _edgeTriggeredInDrag = true;
+                _isDragging = false; // 強制停止拖曳，避免連續觸發
+                EdgeReached?.Invoke(1); // 1 = Next
+            }
+
+            // 2. 往右拉 (想看左邊/上一張)
+            // 當圖片的「左邊緣」已經非常接近畫布的右邊界
+            else if (_panOffset.X > (this.Width - threshold))
+            {
+                _edgeTriggeredInDrag = true;
+                _isDragging = false;
+                EdgeReached?.Invoke(-1); // -1 = Prev
             }
         }
 
