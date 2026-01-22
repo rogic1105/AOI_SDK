@@ -1,4 +1,4 @@
-//AOI_SDK\framework\src\test_utils.cpp
+// AOI_SDK\framework\src\test_utils.cpp
 
 #include "framework/test_utils.hpp"
 
