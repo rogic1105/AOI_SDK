@@ -40,7 +40,7 @@ namespace core {
         int W, int H,
         float sigma,
         const char* mode_str,
-        float fixed_max_val,
+        float hessianMaxFactor,
         float* d_temp_blur_f32,
         float* d_temp_response,
         cudaStream_t s,
@@ -61,7 +61,7 @@ namespace core {
         else if (strcmp(mode_str, "both") == 0) mode = detectionMode::BOTH;
         core::computeHessianResponse_gpu(d_temp_blur_f32, d_temp_response, W, H, mode, s);
 
-        float scale_factor = 255.0f / fixed_max_val;
+        float scale_factor = 255.0f / hessianMaxFactor;
         core::scale_clamp_f32_to_u8_gpu(d_temp_response, d_out, num_pixels, scale_factor, s);
 
     }
