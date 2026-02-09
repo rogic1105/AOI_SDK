@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Threading;       // 用於 Thread.Sleep
+using System.Threading.Tasks; // 用於 Task
 using System.Windows.Forms;
 using Matrox.MatroxImagingLibrary;
 
-namespace Envision_MdigGrab
+namespace AOI.SDK.MILGrab
 {
     public partial class Form1 : Form
     {
-        // ... (原有的路徑變數)
+        // =========================================================================
+        // 設定與資源定義
+        // =========================================================================
         private string DcfFilePath1 = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer0_FreeRun.dcf";
         private string DcfFilePath2 = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer1_FreeRun.dcf";
 
@@ -19,26 +21,27 @@ namespace Envision_MdigGrab
         private MIL_ID MilDigitizer1 = MIL.M_NULL;
         private MIL_ID MilDisplay1 = MIL.M_NULL;
         private MIL_ID MilImage1 = MIL.M_NULL;
-        private bool isLive1 = false;
+        private bool isLive1 = false; // 代表目前是否「真正」在抓取
 
         private MIL_ID MilDigitizer2 = MIL.M_NULL;
         private MIL_ID MilDisplay2 = MIL.M_NULL;
         private MIL_ID MilImage2 = MIL.M_NULL;
         private bool isLive2 = false;
 
-        // Hook 委派宣告 (避免被 GC 回收)
         private MIL_DIG_HOOK_FUNCTION_PTR CameraStatusHandlerDelegate;
-        private MIL_DISP_HOOK_FUNCTION_PTR MouseStatusHandlerDelegate; // 【新增】滑鼠事件委派
-
         private System.Windows.Forms.Timer statusTimer;
+
+        // 【新功能】總開關：記錄使用者是否按下了 Button2 (是否允許抓取)
+        // 預設為 false，這樣 Button1 初始化後就不會自動跑
         private bool UserWantsGrab = false;
+
+        // 【新功能】釋放鎖：當正在釋放資源時，禁止 Timer 去讀取相機，防止卡死
         private volatile bool isReleasing = false;
 
         public Form1()
         {
             InitializeComponent();
             CameraStatusHandlerDelegate = new MIL_DIG_HOOK_FUNCTION_PTR(CameraStatusHandler);
-            MouseStatusHandlerDelegate = new MIL_DISP_HOOK_FUNCTION_PTR(MouseStatusHandler); // 【新增】初始化
 
             statusTimer = new System.Windows.Forms.Timer();
             statusTimer.Interval = 500;
@@ -48,150 +51,77 @@ namespace Envision_MdigGrab
             UpdateStatusLabel(2, false);
         }
 
-        // ... (StatusTimer_Tick 與 CheckCameraPresence 與原本相同，省略以節省篇幅) ...
+        // =========================================================================
+        // Timer: 更新 UI (增加鎖定機制防止卡死)
+        // =========================================================================
         private void StatusTimer_Tick(object sender, EventArgs e)
         {
+            // 如果正在釋放資源，絕對不要去碰 MIL ID
             if (isReleasing) return;
+
             CheckCameraPresence(MilDigitizer1, 1);
             CheckCameraPresence(MilDigitizer2, 2);
         }
 
         private void CheckCameraPresence(MIL_ID dig, int id)
         {
-            if (dig == MIL.M_NULL) { UpdateStatusLabel(id, false); return; }
+            if (dig == MIL.M_NULL)
+            {
+                UpdateStatusLabel(id, false);
+                return;
+            }
+
+            // 使用 try-catch 包覆，因為在斷線邊緣 MdigInquire 可能會報錯
             try
             {
                 MIL_INT presence = 0;
                 MIL.MdigInquire(dig, MIL.M_CAMERA_PRESENT, ref presence);
-                UpdateStatusLabel(id, (presence == MIL.M_YES || presence == MIL.M_SUPPORTED));
+                bool isOnline = (presence == MIL.M_YES || presence == MIL.M_SUPPORTED);
+                UpdateStatusLabel(id, isOnline);
             }
-            catch { UpdateStatusLabel(id, false); }
+            catch
+            {
+                // 如果出錯，視為離線
+                UpdateStatusLabel(id, false);
+            }
         }
 
-        // ... (Button 1 Click) ...
+        // =========================================================================
+        // Button 1: 初始化 (只準備，不取像)
+        // =========================================================================
         private void button1_Click(object sender, EventArgs e)
         {
             if (MilApplication != MIL.M_NULL) return;
 
-            isReleasing = false;
-            UserWantsGrab = false;
+            isReleasing = false; // 重置釋放鎖
+            UserWantsGrab = false; // 初始化時，預設不抓取
 
             MIL.MappAllocDefault(MIL.M_DEFAULT, ref MilApplication, ref MilSystem, MIL.M_NULL, MIL.M_NULL, MIL.M_NULL);
             MIL.MappControl(MIL.M_DEFAULT, MIL.M_ERROR, MIL.M_PRINT_DISABLE);
 
-            // 這裡傳入 panel1.Handle 還有對應的 ID
             InitCamera(MIL.M_DEV0, DcfFilePath1, ref MilDigitizer1, ref MilDisplay1, ref MilImage1, panel1.Handle, 1);
             InitCamera(MIL.M_DEV1, DcfFilePath2, ref MilDigitizer2, ref MilDisplay2, ref MilImage2, panel2.Handle, 2);
 
             statusTimer.Start();
         }
 
-        // =========================================================================
-        // 【修改】InitCamera: 加入滑鼠互動與座標顯示 Hook
-        // =========================================================================
         private void InitCamera(MIL_INT devNum, string dcfPath, ref MIL_ID milDig, ref MIL_ID milDisp, ref MIL_ID milImg, IntPtr panelHandle, int id)
         {
             MIL.MdigAlloc(MilSystem, devNum, dcfPath, MIL.M_DEFAULT, ref milDig);
             if (milDig != MIL.M_NULL)
             {
-                MIL.MdigControl(milDig, MIL.M_GRAB_TIMEOUT, 1000);
+                MIL.MdigControl(milDig, MIL.M_GRAB_TIMEOUT, 1000); // 延長一點 Timeout 給相機反應
 
                 MIL.MdispAlloc(MilSystem, MIL.M_DEFAULT, "M_DEFAULT", MIL.M_DEFAULT, ref milDisp);
-
                 MIL_INT sizeX = MIL.MdigInquire(milDig, MIL.M_SIZE_X, MIL.M_NULL);
                 MIL_INT sizeY = MIL.MdigInquire(milDig, MIL.M_SIZE_Y, MIL.M_NULL);
-
                 MIL.MbufAlloc2d(MilSystem, sizeX, sizeY, 8 + MIL.M_UNSIGNED, MIL.M_IMAGE + MIL.M_GRAB + MIL.M_DISP, ref milImg);
                 MIL.MbufClear(milImg, 0);
-
-                // 綁定視窗到 Panel
                 MIL.MdispSelectWindow(milDisp, milImg, panelHandle);
-
-                // =========================================================
-                // 顯示設定調整
-                // =========================================================
-
-                // 1. M_ONCE: 程式啟動瞬間，自動計算縮放比例填滿視窗，但不鎖定。
-                //    這讓使用者隨後可以用滾輪自由縮放。
-                MIL.MdispControl(milDisp, MIL.M_SCALE_DISPLAY, MIL.M_ONCE);
-
-                // 2. M_CENTER_DISPLAY: 讓圖片永遠保持在視窗中心 (特別是縮很小時)
-                MIL.MdispControl(milDisp, MIL.M_CENTER_DISPLAY, MIL.M_ENABLE);
-
-                // 3. 啟用滑鼠控制 (滾輪縮放、右鍵或 Ctrl+左鍵平移)
-                MIL.MdispControl(milDisp, MIL.M_MOUSE_USE, MIL.M_ENABLE);
-
-                // 4. 設定插補模式 (Nearest Neighbor 效能最好，適合看 Pixel 細節)
-                MIL.MdispControl(milDisp, MIL.M_INTERPOLATION_MODE, MIL.M_NEAREST_NEIGHBOR);
-
-                // =========================================================
+                MIL.MdispControl(milDisp, MIL.M_SCALE_DISPLAY, MIL.M_ENABLE);
 
                 // 註冊 Hook
-                MIL.MdispHookFunction(milDisp, MIL.M_MOUSE_MOVE, MouseStatusHandlerDelegate, (IntPtr)id);
                 MIL.MdigHookFunction(milDig, MIL.M_CAMERA_PRESENT, CameraStatusHandlerDelegate, (IntPtr)id);
-            }
-        }
-
-        // =========================================================================
-        // 【新增】滑鼠事件處理器：讀取座標與像素值
-        // =========================================================================
-        private MIL_INT MouseStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
-        {
-            if (isReleasing) return MIL.M_NULL;
-
-            int id = UserPtr.ToInt32();
-            MIL_ID currentImg = (id == 1) ? MilImage1 : MilImage2;
-
-            if (currentImg == MIL.M_NULL) return MIL.M_NULL;
-
-            double posX = 0;
-            double posY = 0;
-
-            // 取得滑鼠在 "Buffer" (影像) 上的座標 (這會自動計算縮放後的真實像素位置)
-            MIL.MdispGetHookInfo(EventId, MIL.M_MOUSE_POSITION_BUFFER_X, ref posX);
-            MIL.MdispGetHookInfo(EventId, MIL.M_MOUSE_POSITION_BUFFER_Y, ref posY);
-
-            // 轉成整數
-            int x = (int)posX;
-            int y = (int)posY;
-            int pixelValue = -1;
-
-            // 取得影像寬高以防止越界讀取
-            MIL_INT sizeX = MIL.MbufInquire(currentImg, MIL.M_SIZE_X, MIL.M_NULL);
-            MIL_INT sizeY = MIL.MbufInquire(currentImg, MIL.M_SIZE_Y, MIL.M_NULL);
-
-            if (x >= 0 && x < sizeX && y >= 0 && y < sizeY)
-            {
-                // 讀取單點像素值 (注意：頻繁呼叫 MbufGet 可能會稍微影響效能，但在 UI 事件中通常可接受)
-                byte[] data = new byte[1];
-                MIL.MbufGet2d(currentImg, x, y, 1, 1, data);
-                pixelValue = data[0];
-            }
-
-            // 更新 UI (使用 Invoke 避免跨執行緒錯誤)
-            UpdateCoordinateLabel(id, x, y, pixelValue);
-
-            return MIL.M_NULL;
-        }
-
-        private void UpdateCoordinateLabel(int id, int x, int y, int value)
-        {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(() => UpdateCoordinateLabel(id, x, y, value)));
-                return;
-            }
-
-            // 假設你有兩個 Label 叫做 labelCoord1 和 labelCoord2
-            // 如果你還沒建立，請在 Form 設計介面上拉兩個 Label
-            Label targetLabel = (id == 1) ? labelCoord1 : labelCoord2;
-
-            if (targetLabel != null)
-            {
-                if (value != -1)
-                    targetLabel.Text = $"X: {x}, Y: {y} | Value: {value}";
-                else
-                    targetLabel.Text = $"X: {x}, Y: {y} | Out of Range";
             }
         }
 
@@ -318,11 +248,16 @@ namespace Envision_MdigGrab
         // =========================================================================
         private async void button3_Click(object sender, EventArgs e)
         {
+            // 1. 【關鍵】立刻舉起「釋放中」旗標
+            // 這會讓 Timer_Tick 立刻 return，不再去存取 MIL ID
             isReleasing = true;
             statusTimer.Stop();
 
-            button1.Enabled = false; button2.Enabled = false; button3.Enabled = false;
+            button1.Enabled = false;
+            button2.Enabled = false;
+            button3.Enabled = false;
 
+            // 2. 到背景執行釋放，UI 不會卡住
             await Task.Run(() =>
             {
                 FreeCameraResources(ref MilDigitizer1, ref MilImage1, ref MilDisplay1, 1);
@@ -337,29 +272,25 @@ namespace Envision_MdigGrab
 
             UpdateStatusLabel(1, false);
             UpdateStatusLabel(2, false);
-            // 清空座標 Label
-            if (labelCoord1 != null) labelCoord1.Text = "No Image";
-            if (labelCoord2 != null) labelCoord2.Text = "No Image";
+            button3.Enabled = true;
+            button1.Enabled = true;
+            button2.Enabled = true;
 
-            button3.Enabled = true; button1.Enabled = true; button2.Enabled = true;
-            isLive1 = false; isLive2 = false;
-            UserWantsGrab = false;
+            isLive1 = false;
+            isLive2 = false;
+            UserWantsGrab = false; // 重置使用者意圖
         }
 
         private void FreeCameraResources(ref MIL_ID dig, ref MIL_ID img, ref MIL_ID disp, int id)
         {
             if (dig != MIL.M_NULL)
             {
-                // 解除相機 Hook
+                // 先解除 Hook
                 MIL.MdigHookFunction(dig, MIL.M_CAMERA_PRESENT + MIL.M_UNHOOK, CameraStatusHandlerDelegate, (IntPtr)id);
 
-                // 【新增】解除顯示器 Hook
-                if (disp != MIL.M_NULL)
-                {
-                    MIL.MdispHookFunction(disp, MIL.M_MOUSE_MOVE + MIL.M_UNHOOK, MouseStatusHandlerDelegate, (IntPtr)id);
-                }
-
+                // 嘗試停止
                 MIL.MdigHalt(dig);
+
                 MIL.MbufFree(img);
                 MIL.MdispFree(disp);
                 MIL.MdigFree(dig);
