@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Matrox.MatroxImagingLibrary;
@@ -9,377 +9,189 @@ namespace Envision_MdigGrab
 {
     public partial class Form1 : Form
     {
-        // ... (原有的路徑變數)
-        private string DcfFilePath1 = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer0_FreeRun.dcf";
-        private string DcfFilePath2 = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer1_FreeRun.dcf";
+        // 定義相機設定結構 (方便未來擴充)
+        private class CameraConfig
+        {
+            public int Id { get; set; }
+            public MIL_INT DevNum { get; set; }
+            public string DcfPath { get; set; }
+            public Panel DisplayPanel { get; set; }
+            public Label StatusLabel { get; set; } // 每支相機的狀態燈 (Online/Offline)
+        }
 
-        private MIL_ID MilApplication = MIL.M_NULL;
-        private MIL_ID MilSystem = MIL.M_NULL;
+        // 相機物件列表
+        private List<MilCameraUnit> _cameras = new List<MilCameraUnit>();
+        private List<CameraConfig> _configs;
 
-        private MIL_ID MilDigitizer1 = MIL.M_NULL;
-        private MIL_ID MilDisplay1 = MIL.M_NULL;
-        private MIL_ID MilImage1 = MIL.M_NULL;
-        private bool isLive1 = false;
-
-        private MIL_ID MilDigitizer2 = MIL.M_NULL;
-        private MIL_ID MilDisplay2 = MIL.M_NULL;
-        private MIL_ID MilImage2 = MIL.M_NULL;
-        private bool isLive2 = false;
-
-        // Hook 委派宣告 (避免被 GC 回收)
-        private MIL_DIG_HOOK_FUNCTION_PTR CameraStatusHandlerDelegate;
-        private MIL_DISP_HOOK_FUNCTION_PTR MouseStatusHandlerDelegate; // 【新增】滑鼠事件委派
-
+        // 全域控制變數
         private System.Windows.Forms.Timer statusTimer;
-        private bool UserWantsGrab = false;
-        private volatile bool isReleasing = false;
+        private bool _userWantsGrab = false;
+        private volatile bool _isReleasing = false;
+
+        // 共用的座標顯示 Label (假設你在 Form 上拉了一個叫 labelGlobalCoord 的 Label)
+        // 若你的 label 名稱不同，請在此修改或在 InitializeComponent 後指派
+        private Label _sharedCoordLabel;
 
         public Form1()
         {
             InitializeComponent();
-            CameraStatusHandlerDelegate = new MIL_DIG_HOOK_FUNCTION_PTR(CameraStatusHandler);
-            MouseStatusHandlerDelegate = new MIL_DISP_HOOK_FUNCTION_PTR(MouseStatusHandler); // 【新增】初始化
+
+            // 設定共用的 Label (請確認你的 Form 上有這個 Label，或者把這裡改成你現有的 Label)
+            _sharedCoordLabel = labelCoord1; // 假設你用 labelCoord1 當作顯示用的 Label
+
+            // 初始化設定清單 (要加第3支相機就在這加)
+            _configs = new List<CameraConfig>
+            {
+                new CameraConfig { Id = 1, DevNum = MIL.M_DEV0, DcfPath = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer0_FreeRun.dcf", DisplayPanel = panel1, StatusLabel = label1 },
+                new CameraConfig { Id = 2, DevNum = MIL.M_DEV1, DcfPath = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer1_FreeRun.dcf", DisplayPanel = panel2, StatusLabel = label2 }
+                // new CameraConfig { Id = 3, DevNum = MIL.M_DEV2, ... } 
+            };
 
             statusTimer = new System.Windows.Forms.Timer();
             statusTimer.Interval = 500;
             statusTimer.Tick += StatusTimer_Tick;
 
-            UpdateStatusLabel(1, false);
-            UpdateStatusLabel(2, false);
+            // 初始 UI 狀態
+            foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
+            UpdateGlobalCoordLabel("Ready");
         }
 
-        // ... (StatusTimer_Tick 與 CheckCameraPresence 與原本相同，省略以節省篇幅) ...
-        private void StatusTimer_Tick(object sender, EventArgs e)
-        {
-            if (isReleasing) return;
-            CheckCameraPresence(MilDigitizer1, 1);
-            CheckCameraPresence(MilDigitizer2, 2);
-        }
+        // ================= Button Events =================
 
-        private void CheckCameraPresence(MIL_ID dig, int id)
-        {
-            if (dig == MIL.M_NULL) { UpdateStatusLabel(id, false); return; }
-            try
-            {
-                MIL_INT presence = 0;
-                MIL.MdigInquire(dig, MIL.M_CAMERA_PRESENT, ref presence);
-                UpdateStatusLabel(id, (presence == MIL.M_YES || presence == MIL.M_SUPPORTED));
-            }
-            catch { UpdateStatusLabel(id, false); }
-        }
-
-        // ... (Button 1 Click) ...
         private void button1_Click(object sender, EventArgs e)
         {
-            if (MilApplication != MIL.M_NULL) return;
+            if (_cameras.Count > 0) return; // 避免重複初始化
 
-            isReleasing = false;
-            UserWantsGrab = false;
+            _isReleasing = false;
+            _userWantsGrab = false;
 
-            MIL.MappAllocDefault(MIL.M_DEFAULT, ref MilApplication, ref MilSystem, MIL.M_NULL, MIL.M_NULL, MIL.M_NULL);
-            MIL.MappControl(MIL.M_DEFAULT, MIL.M_ERROR, MIL.M_PRINT_DISABLE);
+            // 1. 初始化 System
+            MilSystemManager.Initialize();
 
-            // 這裡傳入 panel1.Handle 還有對應的 ID
-            InitCamera(MIL.M_DEV0, DcfFilePath1, ref MilDigitizer1, ref MilDisplay1, ref MilImage1, panel1.Handle, 1);
-            InitCamera(MIL.M_DEV1, DcfFilePath2, ref MilDigitizer2, ref MilDisplay2, ref MilImage2, panel2.Handle, 2);
+            // 2. 根據設定檔迴圈建立相機
+            foreach (var cfg in _configs)
+            {
+                var cam = new MilCameraUnit(cfg.Id, cfg.DevNum, cfg.DcfPath, cfg.DisplayPanel.Handle);
+
+                // 訂閱事件：所有相機都呼叫同一個 UpdateGlobalCoordLabel
+                cam.OnMouseDataChanged += UpdateGlobalCoordLabel_FromCamera;
+
+                cam.Initialize();
+                _cameras.Add(cam);
+            }
 
             statusTimer.Start();
         }
 
-        // =========================================================================
-        // 【修改】InitCamera: 加入滑鼠互動與座標顯示 Hook
-        // =========================================================================
-        private void InitCamera(MIL_INT devNum, string dcfPath, ref MIL_ID milDig, ref MIL_ID milDisp, ref MIL_ID milImg, IntPtr panelHandle, int id)
-        {
-            MIL.MdigAlloc(MilSystem, devNum, dcfPath, MIL.M_DEFAULT, ref milDig);
-            if (milDig != MIL.M_NULL)
-            {
-                MIL.MdigControl(milDig, MIL.M_GRAB_TIMEOUT, 1000);
-
-                MIL.MdispAlloc(MilSystem, MIL.M_DEFAULT, "M_DEFAULT", MIL.M_DEFAULT, ref milDisp);
-
-                MIL_INT sizeX = MIL.MdigInquire(milDig, MIL.M_SIZE_X, MIL.M_NULL);
-                MIL_INT sizeY = MIL.MdigInquire(milDig, MIL.M_SIZE_Y, MIL.M_NULL);
-
-                MIL.MbufAlloc2d(MilSystem, sizeX, sizeY, 8 + MIL.M_UNSIGNED, MIL.M_IMAGE + MIL.M_GRAB + MIL.M_DISP, ref milImg);
-                MIL.MbufClear(milImg, 0);
-
-                // 綁定視窗到 Panel
-                MIL.MdispSelectWindow(milDisp, milImg, panelHandle);
-
-                // =========================================================
-                // 顯示設定調整
-                // =========================================================
-
-                // 1. M_ONCE: 程式啟動瞬間，自動計算縮放比例填滿視窗，但不鎖定。
-                //    這讓使用者隨後可以用滾輪自由縮放。
-                MIL.MdispControl(milDisp, MIL.M_SCALE_DISPLAY, MIL.M_ONCE);
-
-                // 2. M_CENTER_DISPLAY: 讓圖片永遠保持在視窗中心 (特別是縮很小時)
-                MIL.MdispControl(milDisp, MIL.M_CENTER_DISPLAY, MIL.M_ENABLE);
-
-                // 3. 啟用滑鼠控制 (滾輪縮放、右鍵或 Ctrl+左鍵平移)
-                MIL.MdispControl(milDisp, MIL.M_MOUSE_USE, MIL.M_ENABLE);
-
-                // 4. 設定插補模式 (Nearest Neighbor 效能最好，適合看 Pixel 細節)
-                MIL.MdispControl(milDisp, MIL.M_INTERPOLATION_MODE, MIL.M_NEAREST_NEIGHBOR);
-
-                // =========================================================
-
-                // 註冊 Hook
-                MIL.MdispHookFunction(milDisp, MIL.M_MOUSE_MOVE, MouseStatusHandlerDelegate, (IntPtr)id);
-                MIL.MdigHookFunction(milDig, MIL.M_CAMERA_PRESENT, CameraStatusHandlerDelegate, (IntPtr)id);
-            }
-        }
-
-        // =========================================================================
-        // 【新增】滑鼠事件處理器：讀取座標與像素值
-        // =========================================================================
-        private MIL_INT MouseStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
-        {
-            if (isReleasing) return MIL.M_NULL;
-
-            int id = UserPtr.ToInt32();
-            MIL_ID currentImg = (id == 1) ? MilImage1 : MilImage2;
-
-            if (currentImg == MIL.M_NULL) return MIL.M_NULL;
-
-            double posX = 0;
-            double posY = 0;
-
-            // 取得滑鼠在 "Buffer" (影像) 上的座標 (這會自動計算縮放後的真實像素位置)
-            MIL.MdispGetHookInfo(EventId, MIL.M_MOUSE_POSITION_BUFFER_X, ref posX);
-            MIL.MdispGetHookInfo(EventId, MIL.M_MOUSE_POSITION_BUFFER_Y, ref posY);
-
-            // 轉成整數
-            int x = (int)posX;
-            int y = (int)posY;
-            int pixelValue = -1;
-
-            // 取得影像寬高以防止越界讀取
-            MIL_INT sizeX = MIL.MbufInquire(currentImg, MIL.M_SIZE_X, MIL.M_NULL);
-            MIL_INT sizeY = MIL.MbufInquire(currentImg, MIL.M_SIZE_Y, MIL.M_NULL);
-
-            if (x >= 0 && x < sizeX && y >= 0 && y < sizeY)
-            {
-                // 讀取單點像素值 (注意：頻繁呼叫 MbufGet 可能會稍微影響效能，但在 UI 事件中通常可接受)
-                byte[] data = new byte[1];
-                MIL.MbufGet2d(currentImg, x, y, 1, 1, data);
-                pixelValue = data[0];
-            }
-
-            // 更新 UI (使用 Invoke 避免跨執行緒錯誤)
-            UpdateCoordinateLabel(id, x, y, pixelValue);
-
-            return MIL.M_NULL;
-        }
-
-        private void UpdateCoordinateLabel(int id, int x, int y, int value)
-        {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(() => UpdateCoordinateLabel(id, x, y, value)));
-                return;
-            }
-
-            // 假設你有兩個 Label 叫做 labelCoord1 和 labelCoord2
-            // 如果你還沒建立，請在 Form 設計介面上拉兩個 Label
-            Label targetLabel = (id == 1) ? labelCoord1 : labelCoord2;
-
-            if (targetLabel != null)
-            {
-                if (value != -1)
-                    targetLabel.Text = $"X: {x}, Y: {y} | Value: {value}";
-                else
-                    targetLabel.Text = $"X: {x}, Y: {y} | Out of Range";
-            }
-        }
-
-        // =========================================================================
-        // Button 2: 總開關 (控制 UserWantsGrab)
-        // =========================================================================
         private void button2_Click(object sender, EventArgs e)
         {
-            // 切換使用者的意圖：想看 or 不想看
-            UserWantsGrab = !UserWantsGrab;
-
-            ApplyGrabState(1);
-            ApplyGrabState(2);
-        }
-
-        private void ApplyGrabState(int id)
-        {
-            MIL_ID dig = (id == 1) ? MilDigitizer1 : MilDigitizer2;
-            MIL_ID img = (id == 1) ? MilImage1 : MilImage2;
-            ref bool isLive = ref (id == 1 ? ref isLive1 : ref isLive2);
-
-            if (dig == MIL.M_NULL) return;
-
-            try
+            _userWantsGrab = !_userWantsGrab;
+            foreach (var cam in _cameras)
             {
-                if (UserWantsGrab)
-                {
-                    // 使用者想看，且目前沒在跑 -> 啟動
-                    if (!isLive)
-                    {
-                        // 先檢查相機是否真的在線上，避免報錯
-                        MIL_INT presence = 0;
-                        MIL.MdigInquire(dig, MIL.M_CAMERA_PRESENT, ref presence);
-                        if (presence == MIL.M_YES || presence == MIL.M_SUPPORTED)
-                        {
-                            MIL.MdigHalt(dig); // 保險起見 Halt 一次
-                            MIL.MdigGrabContinuous(dig, img);
-                            isLive = true;
-                        }
-                    }
-                }
-                else
-                {
-                    // 使用者不想看 -> 停止
-                    if (isLive)
-                    {
-                        MIL.MdigHalt(dig);
-                        isLive = false;
-                    }
-                }
-            }
-            catch { /* 忽略錯誤 */ }
-        }
-
-        // =========================================================================
-        // Hook: 自動重連處理 (含延遲功能)
-        // =========================================================================
-        private MIL_INT CameraStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
-        {
-            // 如果正在釋放資源，Hook 直接退出，不要搗亂
-            if (isReleasing) return MIL.M_NULL;
-
-            int cameraId = UserPtr.ToInt32();
-            MIL_ID currentDig = (cameraId == 1) ? MilDigitizer1 : MilDigitizer2;
-            MIL_ID currentImg = (cameraId == 1) ? MilImage1 : MilImage2;
-
-            if (currentDig == MIL.M_NULL) return MIL.M_NULL;
-
-            MIL_INT presence = 0;
-            MIL.MdigInquire(currentDig, MIL.M_CAMERA_PRESENT, ref presence);
-
-            if (presence == MIL.M_YES || presence == MIL.M_SUPPORTED)
-            {
-                // =============================================================
-                // 解決條碼問題：相機剛上電需要時間 Sync
-                // =============================================================
-                MIL.MdigHalt(currentDig); // 先停，清除舊 Buffer
-
-                // 讓 Hook 執行緒睡 1.5 秒，等待相機影像穩定
-                // Hook 是跑在背景執行緒，所以這不會卡住你的 UI (視窗還可以動)
-                Thread.Sleep(1500);
-
-                // =============================================================
-                // 解決自動亂跑問題：檢查 UserWantsGrab
-                // =============================================================
-                if (UserWantsGrab)
-                {
-                    MIL.MdigGrabContinuous(currentDig, currentImg);
-                    if (cameraId == 1) isLive1 = true; else isLive2 = true;
-                }
-            }
-            else
-            {
-                // 斷線
-                MIL.MdigHalt(currentDig);
-                if (cameraId == 1) isLive1 = false; else isLive2 = false;
-            }
-
-            return MIL.M_NULL;
-        }
-
-        private void UpdateStatusLabel(int cameraId, bool isConnected)
-        {
-            // UI 更新邏輯 (省略 Invoke 檢查，與之前相同)
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(() => UpdateStatusLabel(cameraId, isConnected)));
-                return;
-            }
-            Label targetLabel = (cameraId == 1) ? label1 : label2;
-            string statusText = isConnected ? $"Camera {cameraId}: Online" : $"Camera {cameraId}: Offline";
-            Color backColor = isConnected ? Color.LightGreen : Color.Red;
-
-            if (targetLabel.Text != statusText)
-            {
-                targetLabel.Text = statusText;
-                targetLabel.BackColor = backColor;
-                targetLabel.ForeColor = isConnected ? Color.Black : Color.White;
+                cam.SetUserGrabIntent(_userWantsGrab);
             }
         }
 
-        // =========================================================================
-        // Button 3: 釋放資源 (修復卡死問題)
-        // =========================================================================
         private async void button3_Click(object sender, EventArgs e)
         {
-            isReleasing = true;
+            _isReleasing = true;
             statusTimer.Stop();
 
-            button1.Enabled = false; button2.Enabled = false; button3.Enabled = false;
+            SetButtonsEnabled(false);
 
             await Task.Run(() =>
             {
-                FreeCameraResources(ref MilDigitizer1, ref MilImage1, ref MilDisplay1, 1);
-                FreeCameraResources(ref MilDigitizer2, ref MilImage2, ref MilDisplay2, 2);
-
-                if (MilApplication != MIL.M_NULL)
+                foreach (var cam in _cameras)
                 {
-                    MIL.MappFreeDefault(MilApplication, MilSystem, MIL.M_NULL, MIL.M_NULL, MIL.M_NULL);
-                    MilSystem = MilApplication = MIL.M_NULL;
+                    cam.Free();
                 }
+                _cameras.Clear(); // 清空列表
+                MilSystemManager.Free();
             });
 
-            UpdateStatusLabel(1, false);
-            UpdateStatusLabel(2, false);
-            // 清空座標 Label
-            if (labelCoord1 != null) labelCoord1.Text = "No Image";
-            if (labelCoord2 != null) labelCoord2.Text = "No Image";
-
-            button3.Enabled = true; button1.Enabled = true; button2.Enabled = true;
-            isLive1 = false; isLive2 = false;
-            UserWantsGrab = false;
+            ResetUI();
+            SetButtonsEnabled(true);
         }
 
-        private void FreeCameraResources(ref MIL_ID dig, ref MIL_ID img, ref MIL_ID disp, int id)
+        // ================= UI Update Logic =================
+
+        // 這是所有相機共用的滑鼠事件處理器
+        private void UpdateGlobalCoordLabel_FromCamera(int camId, int x, int y, int val)
         {
-            if (dig != MIL.M_NULL)
+            // 這裡可以加上 "CAM 1: " 讓使用者知道現在滑鼠在哪個視窗
+            string text = (val != -1)
+                ? $"[CAM {camId}] X: {x}, Y: {y} | Val: {val}"
+                : $"[CAM {camId}] Out of Range";
+
+            UpdateGlobalCoordLabel(text);
+        }
+
+        private void UpdateGlobalCoordLabel(string text)
+        {
+            if (_sharedCoordLabel == null) return;
+
+            if (_sharedCoordLabel.InvokeRequired)
             {
-                // 解除相機 Hook
-                MIL.MdigHookFunction(dig, MIL.M_CAMERA_PRESENT + MIL.M_UNHOOK, CameraStatusHandlerDelegate, (IntPtr)id);
-
-                // 【新增】解除顯示器 Hook
-                if (disp != MIL.M_NULL)
-                {
-                    MIL.MdispHookFunction(disp, MIL.M_MOUSE_MOVE + MIL.M_UNHOOK, MouseStatusHandlerDelegate, (IntPtr)id);
-                }
-
-                MIL.MdigHalt(dig);
-                MIL.MbufFree(img);
-                MIL.MdispFree(disp);
-                MIL.MdigFree(dig);
-
-                dig = MIL.M_NULL;
-                img = MIL.M_NULL;
-                disp = MIL.M_NULL;
+                _sharedCoordLabel.BeginInvoke(new Action(() => UpdateGlobalCoordLabel(text)));
             }
+            else
+            {
+                _sharedCoordLabel.Text = text;
+            }
+        }
+
+        private void StatusTimer_Tick(object sender, EventArgs e)
+        {
+            if (_isReleasing) return;
+            foreach (var cam in _cameras)
+            {
+                UpdateStatusUI(cam.CameraId, cam.CheckPresence());
+            }
+        }
+
+        private void UpdateStatusUI(int id, bool isConnected)
+        {
+            // 找到對應的設定檔來更新 Label
+            var cfg = _configs.Find(c => c.Id == id);
+            if (cfg == null || cfg.StatusLabel == null) return;
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => UpdateStatusUI(id, isConnected)));
+                return;
+            }
+
+            string statusText = isConnected ? $"Camera {id}: Online" : $"Camera {id}: Offline";
+            Color backColor = isConnected ? Color.LightGreen : Color.Red;
+
+            if (cfg.StatusLabel.Text != statusText)
+            {
+                cfg.StatusLabel.Text = statusText;
+                cfg.StatusLabel.BackColor = backColor;
+                cfg.StatusLabel.ForeColor = isConnected ? Color.Black : Color.White;
+            }
+        }
+
+        private void ResetUI()
+        {
+            foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
+            _userWantsGrab = false;
+            UpdateGlobalCoordLabel("System Released");
+        }
+
+        private void SetButtonsEnabled(bool enabled)
+        {
+            button1.Enabled = enabled;
+            button2.Enabled = enabled;
+            button3.Enabled = enabled;
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            isReleasing = true;
+            _isReleasing = true;
             statusTimer.Stop();
-            FreeCameraResources(ref MilDigitizer1, ref MilImage1, ref MilDisplay1, 1);
-            FreeCameraResources(ref MilDigitizer2, ref MilImage2, ref MilDisplay2, 2);
-            if (MilApplication != MIL.M_NULL)
-            {
-                MIL.MappFreeDefault(MilApplication, MilSystem, MIL.M_NULL, MIL.M_NULL, MIL.M_NULL);
-            }
+            foreach (var cam in _cameras) cam.Free();
+            MilSystemManager.Free();
             base.OnFormClosing(e);
         }
     }

@@ -79,7 +79,6 @@
     <Compile Include="Core\GPUProcessor.cs" />
     <Compile Include="Core\Models\TimedResult.cs" />
     <Compile Include="UI\SmartCanvas.cs" />
-    <Compile Include="UI\SmartCanvasPanel.cs" />
     <Compile Include="Utils\FileUtils.cs" />
     <Compile Include="Utils\ImageUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
