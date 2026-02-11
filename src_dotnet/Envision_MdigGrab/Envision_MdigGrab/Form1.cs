@@ -143,9 +143,22 @@ namespace Envision_MdigGrab
         private void StatusTimer_Tick(object sender, EventArgs e)
         {
             if (_isReleasing) return;
+
             foreach (var cam in _cameras)
             {
-                UpdateStatusUI(cam.CameraId, cam.CheckPresence());
+                // 1. 更新連線狀態
+                bool isConnected = cam.CheckPresence();
+                UpdateStatusUI(cam.CameraId, isConnected);
+
+                // 2. [新增] 自動重連取像邏輯
+                // 如果相機在線 + 使用者想要取像 + 但相機目前沒在跑 (可能是剛連上線)
+                if (isConnected && cam.UserWantsGrab && !cam.IsLive)
+                {
+                    // 呼叫 ApplyGrabState 嘗試重啟 MdigProcess
+                    cam.ApplyGrabState();
+
+                    // 可選：加上 Log 或 Console.WriteLine("Camera " + cam.CameraId + " Resumed.");
+                }
             }
         }
 

@@ -36,7 +36,6 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.labelCoord1 = new System.Windows.Forms.Label();
-            this.labelCoord2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // panel1
@@ -44,12 +43,12 @@
             this.panel1.Location = new System.Drawing.Point(14, 33);
             this.panel1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(223, 111);
+            this.panel1.Size = new System.Drawing.Size(662, 111);
             this.panel1.TabIndex = 0;
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(431, 44);
+            this.button1.Location = new System.Drawing.Point(702, 33);
             this.button1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(202, 29);
@@ -60,7 +59,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(431, 95);
+            this.button2.Location = new System.Drawing.Point(702, 78);
             this.button2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(202, 29);
@@ -71,7 +70,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(431, 148);
+            this.button3.Location = new System.Drawing.Point(702, 115);
             this.button3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(202, 29);
@@ -82,10 +81,10 @@
             // 
             // panel2
             // 
-            this.panel2.Location = new System.Drawing.Point(14, 181);
+            this.panel2.Location = new System.Drawing.Point(14, 188);
             this.panel2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(223, 107);
+            this.panel2.Size = new System.Drawing.Size(662, 111);
             this.panel2.TabIndex = 1;
             // 
             // label1
@@ -109,31 +108,21 @@
             // labelCoord1
             // 
             this.labelCoord1.AutoSize = true;
-            this.labelCoord1.Location = new System.Drawing.Point(243, 129);
+            this.labelCoord1.Location = new System.Drawing.Point(11, 303);
             this.labelCoord1.Name = "labelCoord1";
             this.labelCoord1.Size = new System.Drawing.Size(41, 15);
             this.labelCoord1.TabIndex = 6;
             this.labelCoord1.Text = "label3";
             // 
-            // labelCoord2
-            // 
-            this.labelCoord2.AutoSize = true;
-            this.labelCoord2.Location = new System.Drawing.Point(243, 273);
-            this.labelCoord2.Name = "labelCoord2";
-            this.labelCoord2.Size = new System.Drawing.Size(41, 15);
-            this.labelCoord2.TabIndex = 7;
-            this.labelCoord2.Text = "label4";
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(638, 316);
-            this.Controls.Add(this.labelCoord2);
+            this.ClientSize = new System.Drawing.Size(918, 329);
+            this.Controls.Add(this.panel2);
             this.Controls.Add(this.labelCoord1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.panel2);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
@@ -156,7 +145,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label labelCoord1;
-        private System.Windows.Forms.Label labelCoord2;
     }
 }
 
