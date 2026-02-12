@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Matrox.MatroxImagingLibrary;
 
 namespace Envision_MdigGrab
@@ -9,20 +8,26 @@ namespace Envision_MdigGrab
     {
         public MIL_ID MilDigitizer = MIL.M_NULL;
         public MIL_ID MilDisplay = MIL.M_NULL;
+        private MIL_ID _milProcBuffer = MIL.M_NULL;
 
-        // 用於 MdigProcess 的雙緩衝區 (接收相機資料)
+        // [新增] 紀錄這支相機所屬的 System ID
+        private MIL_ID _ownerSystemId = MIL.M_NULL;
+
+        // 雙緩衝區與顯示緩衝區
         private MIL_ID[] _milGrabBuffers = new MIL_ID[2];
-        private MIL_INT _milGrabBufferListSize = 2;
-
-        // [新增] 用於顯示的專用緩衝區 (解決滑鼠互動問題)
         private MIL_ID _milDisplayBuffer = MIL.M_NULL;
+        private MIL_INT _milGrabBufferListSize = 2;
 
         public bool IsLive { get; private set; } = false;
         public int CameraId { get; private set; }
         public bool IsConnected { get; private set; } = false;
 
-        // 公開屬性讓 Form 判斷是否需要重啟
+        // 公開屬性
         public bool UserWantsGrab => _userWantsGrab;
+        public bool EnableHessian { get; set; } = true;
+        public double BinarizeThreshold { get; set; } = 128.0;
+        public double HessianSigma { get; set; } = 85;   
+        public double HessianFixedMax { get; set; } = 1.0;
 
         private bool _userWantsGrab = false;
         private bool _isReleased = false;
@@ -30,6 +35,7 @@ namespace Envision_MdigGrab
         private string _dcfPath;
         private IntPtr _panelHandle;
 
+        // Delegates (防止被 GC 回收)
         private MIL_DIG_HOOK_FUNCTION_PTR _cameraStatusDelegate;
         private MIL_DISP_HOOK_FUNCTION_PTR _mouseStatusDelegate;
         private MIL_DIG_HOOK_FUNCTION_PTR _processingDelegate;
@@ -37,8 +43,12 @@ namespace Envision_MdigGrab
 
         public event Action<int, int, int, int> OnMouseDataChanged;
 
-        public MilCameraUnit(int id, MIL_INT devNum, string dcfPath, IntPtr panelHandle)
+        /// <summary>
+        /// 建構子：必須傳入 systemId
+        /// </summary>
+        public MilCameraUnit(MIL_ID systemId, int id, MIL_INT devNum, string dcfPath, IntPtr panelHandle)
         {
+            _ownerSystemId = systemId; // [重要] 保存 System ID
             CameraId = id;
             _devNum = devNum;
             _dcfPath = dcfPath;
@@ -52,38 +62,43 @@ namespace Envision_MdigGrab
 
         public void Initialize()
         {
-            if (MilSystemManager.MilSystem == MIL.M_NULL) return;
+            if (_ownerSystemId == MIL.M_NULL) return;
 
-            MIL.MdigAlloc(MilSystemManager.MilSystem, _devNum, _dcfPath, MIL.M_DEFAULT, ref MilDigitizer);
+            MIL.MdigAlloc(_ownerSystemId, _devNum, _dcfPath, MIL.M_DEFAULT, ref MilDigitizer);
 
             if (MilDigitizer != MIL.M_NULL)
             {
-                MIL.MdigControl(MilDigitizer, MIL.M_GRAB_TIMEOUT, 1000);
-                MIL.MdispAlloc(MilSystemManager.MilSystem, MIL.M_DEFAULT, "M_DEFAULT", MIL.M_DEFAULT, ref MilDisplay);
+                // ... (Display Alloc 保持不變) ...
+                MIL.MdispAlloc(_ownerSystemId, MIL.M_DEFAULT, "M_DEFAULT", MIL.M_DEFAULT, ref MilDisplay);
 
                 MIL_INT sizeX = MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_X, MIL.M_NULL);
                 MIL_INT sizeY = MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_Y, MIL.M_NULL);
 
-                // 1. 分配 MdigProcess 用的雙緩衝
+                // 1. Grab Buffers (保持不變)
                 for (int i = 0; i < _milGrabBufferListSize; i++)
                 {
-                    MIL.MbufAlloc2d(MilSystemManager.MilSystem, sizeX, sizeY, 8 + MIL.M_UNSIGNED,
+                    MIL.MbufAlloc2d(_ownerSystemId, sizeX, sizeY, 8 + MIL.M_UNSIGNED,
                         MIL.M_IMAGE + MIL.M_GRAB + MIL.M_PROC, ref _milGrabBuffers[i]);
                     MIL.MbufClear(_milGrabBuffers[i], 0);
                 }
 
-                // 2. [關鍵修正] 分配獨立的顯示緩衝區 (Display Buffer)
-                // 加上 MIL.M_DISP 屬性
-                MIL.MbufAlloc2d(MilSystemManager.MilSystem, sizeX, sizeY, 8 + MIL.M_UNSIGNED,
+                // 2. Display Buffer (保持不變)
+                MIL.MbufAlloc2d(_ownerSystemId, sizeX, sizeY, 8 + MIL.M_UNSIGNED,
                     MIL.M_IMAGE + MIL.M_DISP + MIL.M_PROC, ref _milDisplayBuffer);
                 MIL.MbufClear(_milDisplayBuffer, 0);
 
-                // 3. 將 Display 固定綁定在這個 Buffer 上，永遠不切換
+                // 3. [新增] 分配幕後處理 Buffer (Off-screen)
+                // 屬性不需要 M_DISP，只要 M_IMAGE + M_PROC 即可
+                MIL.MbufAlloc2d(_ownerSystemId, sizeX, sizeY, 8 + MIL.M_UNSIGNED,
+                    MIL.M_IMAGE + MIL.M_PROC, ref _milProcBuffer);
+                MIL.MbufClear(_milProcBuffer, 0);
+
+                // ... (Display Select Window 與 Hooks 保持不變) ...
                 MIL.MdispSelectWindow(MilDisplay, _milDisplayBuffer, _panelHandle);
 
                 MIL.MdispControl(MilDisplay, MIL.M_SCALE_DISPLAY, MIL.M_ONCE);
                 MIL.MdispControl(MilDisplay, MIL.M_CENTER_DISPLAY, MIL.M_ENABLE);
-                MIL.MdispControl(MilDisplay, MIL.M_MOUSE_USE, MIL.M_ENABLE); // 啟用滑鼠互動
+                MIL.MdispControl(MilDisplay, MIL.M_MOUSE_USE, MIL.M_ENABLE);
 
                 // Hooks
                 MIL.MdispHookFunction(MilDisplay, MIL.M_MOUSE_MOVE, _mouseStatusDelegate, (IntPtr)CameraId);
@@ -91,25 +106,48 @@ namespace Envision_MdigGrab
             }
         }
 
-        // MdigProcess 的 Callback
-        private static MIL_INT ProcessingFunction(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
+        private static MIL_INT ProcessingFunction(MIL_INT hookType, MIL_ID eventId, IntPtr userPtr)
         {
-            if (UserPtr == IntPtr.Zero) return MIL.M_NULL;
+            if (userPtr == IntPtr.Zero) return MIL.M_NULL;
 
-            GCHandle hObj = GCHandle.FromIntPtr(UserPtr);
+            GCHandle hObj = GCHandle.FromIntPtr(userPtr);
             var cam = hObj.Target as MilCameraUnit;
             if (cam == null || cam._isReleased) return MIL.M_NULL;
 
             MIL_ID modifiedBuffer = MIL.M_NULL;
+            MIL.MdigGetHookInfo(eventId, MIL.M_MODIFIED_BUFFER + MIL.M_BUFFER_ID, ref modifiedBuffer);
 
-            // 取得當前寫入完成的 Buffer ID
-            MIL.MdigGetHookInfo(EventId, MIL.M_MODIFIED_BUFFER + MIL.M_BUFFER_ID, ref modifiedBuffer);
-
-            // [關鍵修正] 使用 Copy 取代 SelectWindow
-            // 將影像資料複製到顯示專用的 Buffer，這樣 Display 的 Handle 就不會變動，滑鼠拖曳就不會斷
-            if (modifiedBuffer != MIL.M_NULL && cam._milDisplayBuffer != MIL.M_NULL)
+            // 確保所有 Buffer 都有效
+            if (modifiedBuffer != MIL.M_NULL && cam._milProcBuffer != MIL.M_NULL && cam._milDisplayBuffer != MIL.M_NULL)
             {
-                MIL.MbufCopy(modifiedBuffer, cam._milDisplayBuffer);
+                // =================================================================
+                // 階段 A: 在幕後 Buffer (_milProcBuffer) 進行所有運算
+                // =================================================================
+
+                // 1. 先做去直條紋 (Col Mean Subtraction)
+                // 輸入: 原始 Grab 影像
+                // 輸出: _milProcBuffer (幕後)
+                MilImageProcessor.ApplyColMeanSubtraction(modifiedBuffer, cam._milProcBuffer);
+
+                // 2. 接著做 Hessian 脊線偵測
+                if (cam.EnableHessian)
+                {
+                    // 輸入: _milProcBuffer (剛剛處理完的圖)
+                    // 輸出: _milProcBuffer (覆蓋自己)
+                    MilImageProcessor.ApplyHessianVerticalFixed(
+                        cam._milProcBuffer,
+                        cam._milProcBuffer,
+                        cam.HessianSigma,
+                        cam.HessianFixedMax
+                    );
+                }
+
+                // =================================================================
+                // 階段 B: 一次性更新顯示
+                // =================================================================
+                // 將最終結果從 幕後 Buffer 複製到 顯示 Buffer
+                // 這會觸發唯一的一次畫面更新，徹底消除閃爍
+                MIL.MbufCopy(cam._milProcBuffer, cam._milDisplayBuffer);
             }
 
             return MIL.M_NULL;
@@ -121,18 +159,15 @@ namespace Envision_MdigGrab
             ApplyGrabState();
         }
 
-        // 這個方法現在可以被外部 (如 Timer) 重複呼叫來嘗試啟動
         public void ApplyGrabState()
         {
             if (MilDigitizer == MIL.M_NULL) return;
 
-            // 如果使用者想取像 + 目前沒在跑 + 相機在線 -> 啟動
             if (_userWantsGrab && !IsLive && CheckPresence())
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_START, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
                 IsLive = true;
             }
-            // 如果使用者不想取像 + 目前正在跑 -> 停止
             else if (!_userWantsGrab && IsLive)
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
@@ -160,12 +195,11 @@ namespace Envision_MdigGrab
 
                 MIL.MdigHookFunction(MilDigitizer, MIL.M_CAMERA_PRESENT + MIL.M_UNHOOK, _cameraStatusDelegate, IntPtr.Zero);
                 if (MilDisplay != MIL.M_NULL)
+                {
                     MIL.MdispHookFunction(MilDisplay, MIL.M_MOUSE_MOVE + MIL.M_UNHOOK, _mouseStatusDelegate, IntPtr.Zero);
-
-                if (MilDisplay != MIL.M_NULL)
                     MIL.MdispSelectWindow(MilDisplay, MIL.M_NULL, IntPtr.Zero);
+                }
 
-                // 釋放 Grab Buffers
                 for (int i = 0; i < _milGrabBufferListSize; i++)
                 {
                     if (_milGrabBuffers[i] != MIL.M_NULL)
@@ -175,24 +209,31 @@ namespace Envision_MdigGrab
                     }
                 }
 
-                // [新增] 釋放 Display Buffer
                 if (_milDisplayBuffer != MIL.M_NULL)
                 {
                     MIL.MbufFree(_milDisplayBuffer);
                     _milDisplayBuffer = MIL.M_NULL;
                 }
-
-                if (MilDisplay != MIL.M_NULL) { MIL.MdispFree(MilDisplay); MilDisplay = MIL.M_NULL; }
+                if (_milProcBuffer != MIL.M_NULL)
+                {
+                    MIL.MbufFree(_milProcBuffer);
+                    _milProcBuffer = MIL.M_NULL;
+                }
+                if (MilDisplay != MIL.M_NULL) 
+                {
+                    MIL.MdispFree(MilDisplay); MilDisplay = MIL.M_NULL; 
+                }
                 MIL.MdigFree(MilDigitizer);
                 MilDigitizer = MIL.M_NULL;
             }
 
             if (_hUserData.IsAllocated) _hUserData.Free();
+
+            // 注意：我們不在這裡釋放 System，因為 System 是由外部 (Form) 傳入並管理的
         }
 
         private MIL_INT MouseStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
         {
-            // 改為讀取 Display Buffer 的數值
             if (_isReleased || _milDisplayBuffer == MIL.M_NULL) return MIL.M_NULL;
 
             double posX = 0, posY = 0;
@@ -220,11 +261,7 @@ namespace Envision_MdigGrab
         private MIL_INT CameraStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
         {
             if (_isReleased) return MIL.M_NULL;
-
             bool present = CheckPresence();
-
-            // 只有當「斷線」且「正在跑」的時候，才需要強制停止
-            // 重新連線的啟動工作交給 Form1 的 Timer 來做，避免執行緒問題
             if (!present && IsLive)
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));

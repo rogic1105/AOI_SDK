@@ -1,6 +1,6 @@
 ﻿namespace Envision_MdigGrab
 {
-    partial class Form1
+    partial class GrabForm
     {
         /// <summary>
         /// Required designer variable.

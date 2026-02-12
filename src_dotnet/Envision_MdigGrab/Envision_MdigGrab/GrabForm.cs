@@ -7,51 +7,74 @@ using Matrox.MatroxImagingLibrary;
 
 namespace Envision_MdigGrab
 {
-    public partial class Form1 : Form
+    public partial class GrabForm : Form
     {
-        // 定義相機設定結構 (方便未來擴充)
         private class CameraConfig
         {
             public int Id { get; set; }
+
+            // [新增] 該相機使用哪種 System (卡片驅動類型)
+            public string SystemDescriptor { get; set; }
+
+            // [新增] 該相機使用第幾張卡 (System Index)
+            public int SystemNum { get; set; }
+
+            // [修改] 在該 System 上的 Device 編號 (因為每個 System 都是獨立的，通常都是 M_DEV0)
             public MIL_INT DevNum { get; set; }
+
             public string DcfPath { get; set; }
             public Panel DisplayPanel { get; set; }
-            public Label StatusLabel { get; set; } // 每支相機的狀態燈 (Online/Offline)
+            public Label StatusLabel { get; set; }
         }
 
-        // 相機物件列表
         private List<MilCameraUnit> _cameras = new List<MilCameraUnit>();
         private List<CameraConfig> _configs;
 
-        // 全域控制變數
+        // [新增] 用來管理已開啟的 System (Key: SystemNum, Value: MIL_ID)
+        // 這樣若有多支相機在同一張卡上，不會重複開啟
+        private Dictionary<int, MIL_ID> _allocatedSystems = new Dictionary<int, MIL_ID>();
+
         private System.Windows.Forms.Timer statusTimer;
         private bool _userWantsGrab = false;
         private volatile bool _isReleasing = false;
-
-        // 共用的座標顯示 Label (假設你在 Form 上拉了一個叫 labelGlobalCoord 的 Label)
-        // 若你的 label 名稱不同，請在此修改或在 InitializeComponent 後指派
         private Label _sharedCoordLabel;
 
-        public Form1()
+        public GrabForm()
         {
             InitializeComponent();
+            _sharedCoordLabel = labelCoord1;
 
-            // 設定共用的 Label (請確認你的 Form 上有這個 Label，或者把這裡改成你現有的 Label)
-            _sharedCoordLabel = labelCoord1; // 假設你用 labelCoord1 當作顯示用的 Label
-
-            // 初始化設定清單 (要加第3支相機就在這加)
             _configs = new List<CameraConfig>
             {
-                new CameraConfig { Id = 1, DevNum = MIL.M_DEV0, DcfPath = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer0_FreeRun.dcf", DisplayPanel = panel1, StatusLabel = label1 },
-                new CameraConfig { Id = 2, DevNum = MIL.M_DEV1, DcfPath = @"C:\Users\User\Downloads\dcf\Radient eV-CL Dual-Base-Digitizer1_FreeRun.dcf", DisplayPanel = panel2, StatusLabel = label2 }
-                // new CameraConfig { Id = 3, DevNum = MIL.M_DEV2, ... } 
+                // === 相機 1：第一張卡 (System 0), Digitizer 0 ===
+                new CameraConfig
+                {
+                    Id = 1,
+                    SystemDescriptor = MIL.M_SYSTEM_RADIENTEVCL, // 或 M_SYSTEM_SOLIOS 等
+                    SystemNum = 0,                               // 第一張卡
+                    DevNum = MIL.M_DEV0,                         // 第一個 Port
+                    DcfPath = @"C:\Users\User\Downloads\dcf\Radient_Config.dcf",
+                    DisplayPanel = panel1,
+                    StatusLabel = label1
+                },
+
+                // === 相機 2：第二張卡 (System 1), Digitizer 0 ===
+                new CameraConfig
+                {
+                    Id = 2,
+                    SystemDescriptor = MIL.M_SYSTEM_RADIENTEVCL, // 相同的驅動
+                    SystemNum = 1,                               // [重點] 第二張卡
+                    DevNum = MIL.M_DEV0,                         // [重點] 該卡上的第一個 Port
+                    DcfPath = @"C:\Users\User\Downloads\dcf\Radient_Config.dcf",
+                    DisplayPanel = panel2,
+                    StatusLabel = label2
+                }
             };
 
             statusTimer = new System.Windows.Forms.Timer();
             statusTimer.Interval = 500;
             statusTimer.Tick += StatusTimer_Tick;
 
-            // 初始 UI 狀態
             foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
             UpdateGlobalCoordLabel("Ready");
         }
@@ -60,22 +83,43 @@ namespace Envision_MdigGrab
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (_cameras.Count > 0) return; // 避免重複初始化
+            if (_cameras.Count > 0) return;
 
             _isReleasing = false;
             _userWantsGrab = false;
 
-            // 1. 初始化 System
+            // 1. 初始化 Application
             MilSystemManager.Initialize();
 
-            // 2. 根據設定檔迴圈建立相機
+            // 2. 遍歷設定檔，分配 System 並建立相機
             foreach (var cfg in _configs)
             {
-                var cam = new MilCameraUnit(cfg.Id, cfg.DevNum, cfg.DcfPath, cfg.DisplayPanel.Handle);
+                MIL_ID currentSysId = MIL.M_NULL;
 
-                // 訂閱事件：所有相機都呼叫同一個 UpdateGlobalCoordLabel
+                // 檢查該張卡 (SystemNum) 是否已經開啟過？
+                if (_allocatedSystems.ContainsKey(cfg.SystemNum))
+                {
+                    currentSysId = _allocatedSystems[cfg.SystemNum];
+                }
+                else
+                {
+                    // 尚未開啟，呼叫 Manager 分配新 System
+                    currentSysId = MilSystemManager.AllocateSystem(cfg.SystemDescriptor, cfg.SystemNum);
+
+                    if (currentSysId != MIL.M_NULL)
+                    {
+                        _allocatedSystems.Add(cfg.SystemNum, currentSysId);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Failed to allocate System Index: {cfg.SystemNum}");
+                        continue; // 跳過此相機
+                    }
+                }
+
+                // 3. 建立相機 (傳入 System ID)
+                var cam = new MilCameraUnit(currentSysId, cfg.Id, cfg.DevNum, cfg.DcfPath, cfg.DisplayPanel.Handle);
                 cam.OnMouseDataChanged += UpdateGlobalCoordLabel_FromCamera;
-
                 cam.Initialize();
                 _cameras.Add(cam);
             }
@@ -96,17 +140,26 @@ namespace Envision_MdigGrab
         {
             _isReleasing = true;
             statusTimer.Stop();
-
             SetButtonsEnabled(false);
 
             await Task.Run(() =>
             {
+                // 1. 先釋放所有相機 (MdigFree, MbufFree)
                 foreach (var cam in _cameras)
                 {
                     cam.Free();
                 }
-                _cameras.Clear(); // 清空列表
-                MilSystemManager.Free();
+                _cameras.Clear();
+
+                // 2. 釋放所有 System (MsysFree)
+                foreach (var kvp in _allocatedSystems)
+                {
+                    MilSystemManager.FreeSystem(kvp.Value);
+                }
+                _allocatedSystems.Clear();
+
+                // 3. 最後釋放 Application (MappFree)
+                MilSystemManager.FreeApplication();
             });
 
             ResetUI();
@@ -115,10 +168,8 @@ namespace Envision_MdigGrab
 
         // ================= UI Update Logic =================
 
-        // 這是所有相機共用的滑鼠事件處理器
         private void UpdateGlobalCoordLabel_FromCamera(int camId, int x, int y, int val)
         {
-            // 這裡可以加上 "CAM 1: " 讓使用者知道現在滑鼠在哪個視窗
             string text = (val != -1)
                 ? $"[CAM {camId}] X: {x}, Y: {y} | Val: {val}"
                 : $"[CAM {camId}] Out of Range";
@@ -129,7 +180,6 @@ namespace Envision_MdigGrab
         private void UpdateGlobalCoordLabel(string text)
         {
             if (_sharedCoordLabel == null) return;
-
             if (_sharedCoordLabel.InvokeRequired)
             {
                 _sharedCoordLabel.BeginInvoke(new Action(() => UpdateGlobalCoordLabel(text)));
@@ -146,42 +196,46 @@ namespace Envision_MdigGrab
 
             foreach (var cam in _cameras)
             {
-                // 1. 更新連線狀態
                 bool isConnected = cam.CheckPresence();
                 UpdateStatusUI(cam.CameraId, isConnected);
 
-                // 2. [新增] 自動重連取像邏輯
-                // 如果相機在線 + 使用者想要取像 + 但相機目前沒在跑 (可能是剛連上線)
                 if (isConnected && cam.UserWantsGrab && !cam.IsLive)
                 {
-                    // 呼叫 ApplyGrabState 嘗試重啟 MdigProcess
                     cam.ApplyGrabState();
-
-                    // 可選：加上 Log 或 Console.WriteLine("Camera " + cam.CameraId + " Resumed.");
                 }
             }
         }
 
         private void UpdateStatusUI(int id, bool isConnected)
         {
-            // 找到對應的設定檔來更新 Label
+            // 1. 找到對應的設定檔
             var cfg = _configs.Find(c => c.Id == id);
             if (cfg == null || cfg.StatusLabel == null) return;
 
+            // 2. 處理跨執行緒呼叫 (Invoke)
             if (this.InvokeRequired)
             {
                 this.BeginInvoke(new Action(() => UpdateStatusUI(id, isConnected)));
                 return;
             }
 
-            string statusText = isConnected ? $"Camera {id}: Online" : $"Camera {id}: Offline";
-            Color backColor = isConnected ? Color.LightGreen : Color.Red;
+            // 3. [修改] 組合顯示字串，加入 SystemNum 和 DevNum
+            // 顯示格式例如: "CAM 1 [Sys:0 Dev:0]: Online"
+            string hardwareInfo = $"[Sys:{cfg.SystemNum} Dev:{cfg.DevNum}]";
 
+            string statusText = isConnected
+                ? $"CAM {id} {hardwareInfo}: Online"
+                : $"CAM {id} {hardwareInfo}: Offline";
+
+            Color backColor = isConnected ? Color.LightGreen : Color.Red;
+            Color foreColor = isConnected ? Color.Black : Color.White;
+
+            // 4. 更新 Label 屬性
             if (cfg.StatusLabel.Text != statusText)
             {
                 cfg.StatusLabel.Text = statusText;
                 cfg.StatusLabel.BackColor = backColor;
-                cfg.StatusLabel.ForeColor = isConnected ? Color.Black : Color.White;
+                cfg.StatusLabel.ForeColor = foreColor;
             }
         }
 
@@ -203,8 +257,10 @@ namespace Envision_MdigGrab
         {
             _isReleasing = true;
             statusTimer.Stop();
+            // Form 關閉時的簡易清理，最好是呼叫 button3 的邏輯
             foreach (var cam in _cameras) cam.Free();
-            MilSystemManager.Free();
+            foreach (var kvp in _allocatedSystems) MilSystemManager.FreeSystem(kvp.Value);
+            MilSystemManager.FreeApplication();
             base.OnFormClosing(e);
         }
     }
