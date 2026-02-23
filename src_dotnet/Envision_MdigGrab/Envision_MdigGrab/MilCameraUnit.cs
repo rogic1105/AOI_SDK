@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading;
 using Matrox.MatroxImagingLibrary;
+using AOI.SDK.Core;
 
 namespace Envision_MdigGrab
 {
@@ -37,6 +38,13 @@ namespace Envision_MdigGrab
         private MIL_INT _devNum;
         private string _dcfPath;
         private IntPtr _panelHandle;
+
+        private int _frameWidth = 0;
+        private int _frameHeight = 0;
+        private byte[] _hostInputBuffer = null;
+        private byte[] _hostOutputBuffer = null;
+        private IntPtr _gpuInputBuffer = IntPtr.Zero;
+        private IntPtr _gpuOutputBuffer = IntPtr.Zero;
 
         private long _fpsWindowStartTicks = 0;
         private int _fpsFrameCount = 0;
@@ -83,6 +91,14 @@ namespace Envision_MdigGrab
 
                 MIL_INT sizeX = MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_X, MIL.M_NULL);
                 MIL_INT sizeY = MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_Y, MIL.M_NULL);
+
+                _frameWidth = (int)sizeX;
+                _frameHeight = (int)sizeY;
+                _hostInputBuffer = new byte[_frameWidth * _frameHeight];
+                _hostOutputBuffer = new byte[_frameWidth * _frameHeight];
+
+                CoreCVWrapper.CoreCV_MallocGPU(out _gpuInputBuffer, _frameWidth, _frameHeight);
+                CoreCVWrapper.CoreCV_MallocGPU(out _gpuOutputBuffer, _frameWidth, _frameHeight);
 
                 // 1. Grab Buffers (保持不變)
                 for (int i = 0; i < _milGrabBufferListSize; i++)
@@ -137,34 +153,16 @@ namespace Envision_MdigGrab
                     return MIL.M_NULL;
                 }
 
-                // =================================================================
-                // 階段 A: 在幕後 Buffer (_milProcBuffer) 進行所有運算
-                // =================================================================
+                bool processedByCoreCv = cam.TryApplyThresholdGpu(modifiedBuffer, cam._milProcBuffer);
 
-                // 1. 先做去直條紋 (Col Mean Subtraction)
-                // 輸入: 原始 Grab 影像
-                // 輸出: _milProcBuffer (幕後)
-                MilImageProcessor.ApplyColMeanSubtraction(modifiedBuffer, cam._milProcBuffer);
-
-                // 2. 接著做 Hessian 脊線偵測
-                if (cam.EnableHessian)
+                if (processedByCoreCv)
                 {
-                    // 輸入: _milProcBuffer (剛剛處理完的圖)
-                    // 輸出: _milProcBuffer (覆蓋自己)
-                    MilImageProcessor.ApplyHessianVerticalFixed(
-                        cam._milProcBuffer,
-                        cam._milProcBuffer,
-                        cam.HessianSigma,
-                        cam.HessianFixedMax
-                    );
+                    MIL.MbufCopy(cam._milProcBuffer, cam._milDisplayBuffer);
                 }
-
-                // =================================================================
-                // 階段 B: 一次性更新顯示
-                // =================================================================
-                // 將最終結果從 幕後 Buffer 複製到 顯示 Buffer
-                // 這會觸發唯一的一次畫面更新，徹底消除閃爍
-                MIL.MbufCopy(cam._milProcBuffer, cam._milDisplayBuffer);
+                else
+                {
+                    MIL.MbufCopy(modifiedBuffer, cam._milDisplayBuffer);
+                }
             }
 
             cam.UpdateFps();
@@ -240,6 +238,19 @@ namespace Envision_MdigGrab
                     MIL.MbufFree(_milProcBuffer);
                     _milProcBuffer = MIL.M_NULL;
                 }
+
+                if (_gpuInputBuffer != IntPtr.Zero)
+                {
+                    CoreCVWrapper.CoreCV_FreeGPU(_gpuInputBuffer);
+                    _gpuInputBuffer = IntPtr.Zero;
+                }
+                if (_gpuOutputBuffer != IntPtr.Zero)
+                {
+                    CoreCVWrapper.CoreCV_FreeGPU(_gpuOutputBuffer);
+                    _gpuOutputBuffer = IntPtr.Zero;
+                }
+                _hostInputBuffer = null;
+                _hostOutputBuffer = null;
                 if (MilDisplay != MIL.M_NULL) 
                 {
                     MIL.MdispFree(MilDisplay); MilDisplay = MIL.M_NULL; 
@@ -253,6 +264,48 @@ namespace Envision_MdigGrab
             // 注意：我們不在這裡釋放 System，因為 System 是由外部 (Form) 傳入並管理的
         }
 
+
+
+        private bool TryApplyThresholdGpu(MIL_ID srcBuffer, MIL_ID dstBuffer)
+        {
+            if (srcBuffer == MIL.M_NULL || dstBuffer == MIL.M_NULL) return false;
+            if (_frameWidth <= 0 || _frameHeight <= 0) return false;
+            if (_hostInputBuffer == null || _hostOutputBuffer == null) return false;
+            if (_gpuInputBuffer == IntPtr.Zero || _gpuOutputBuffer == IntPtr.Zero) return false;
+
+            try
+            {
+                MIL.MbufGet2d(srcBuffer, 0, 0, _frameWidth, _frameHeight, _hostInputBuffer);
+
+                GCHandle hIn = GCHandle.Alloc(_hostInputBuffer, GCHandleType.Pinned);
+                GCHandle hOut = GCHandle.Alloc(_hostOutputBuffer, GCHandleType.Pinned);
+
+                try
+                {
+                    int uploadResult = CoreCVWrapper.CoreCV_Upload(hIn.AddrOfPinnedObject(), _gpuInputBuffer, _frameWidth, _frameHeight);
+                    if (uploadResult != 0) return false;
+
+                    byte threshold = (byte)Math.Max(0, Math.Min(255, (int)BinarizeThreshold));
+                    int thresholdResult = CoreCVWrapper.CoreCV_Threshold_GPU(_gpuInputBuffer, _frameWidth, _frameHeight, threshold, _gpuOutputBuffer);
+                    if (thresholdResult != 0) return false;
+
+                    int downloadResult = CoreCVWrapper.CoreCV_Download(_gpuOutputBuffer, hOut.AddrOfPinnedObject(), _frameWidth, _frameHeight);
+                    if (downloadResult != 0) return false;
+                }
+                finally
+                {
+                    if (hIn.IsAllocated) hIn.Free();
+                    if (hOut.IsAllocated) hOut.Free();
+                }
+
+                MIL.MbufPut2d(dstBuffer, 0, 0, _frameWidth, _frameHeight, _hostOutputBuffer);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private void ResetFps()
         {
