@@ -36,6 +36,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.labelCoord1 = new System.Windows.Forms.Label();
+            this.checkBoxEnableImageProcessing = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // panel1
@@ -114,11 +115,25 @@
             this.labelCoord1.TabIndex = 6;
             this.labelCoord1.Text = "label3";
             // 
+            // checkBoxEnableImageProcessing
+            // 
+            this.checkBoxEnableImageProcessing.AutoSize = true;
+            this.checkBoxEnableImageProcessing.Checked = true;
+            this.checkBoxEnableImageProcessing.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxEnableImageProcessing.Location = new System.Drawing.Point(702, 161);
+            this.checkBoxEnableImageProcessing.Name = "checkBoxEnableImageProcessing";
+            this.checkBoxEnableImageProcessing.Size = new System.Drawing.Size(102, 19);
+            this.checkBoxEnableImageProcessing.TabIndex = 7;
+            this.checkBoxEnableImageProcessing.Text = "影像處理開關";
+            this.checkBoxEnableImageProcessing.UseVisualStyleBackColor = true;
+            this.checkBoxEnableImageProcessing.CheckedChanged += new System.EventHandler(this.checkBoxEnableImageProcessing_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(918, 329);
+            this.Controls.Add(this.checkBoxEnableImageProcessing);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.labelCoord1);
             this.Controls.Add(this.label2);
@@ -145,6 +160,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label labelCoord1;
+        private System.Windows.Forms.CheckBox checkBoxEnableImageProcessing;
     }
 }
-

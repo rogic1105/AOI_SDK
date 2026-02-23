@@ -24,6 +24,7 @@ namespace Envision_MdigGrab
 
         // 公開屬性
         public bool UserWantsGrab => _userWantsGrab;
+        public bool EnableImageProcessing { get; set; } = true;
         public bool EnableHessian { get; set; } = true;
         public double BinarizeThreshold { get; set; } = 128.0;
         public double HessianSigma { get; set; } = 85;   
@@ -120,6 +121,12 @@ namespace Envision_MdigGrab
             // 確保所有 Buffer 都有效
             if (modifiedBuffer != MIL.M_NULL && cam._milProcBuffer != MIL.M_NULL && cam._milDisplayBuffer != MIL.M_NULL)
             {
+                if (!cam.EnableImageProcessing)
+                {
+                    MIL.MbufCopy(modifiedBuffer, cam._milDisplayBuffer);
+                    return MIL.M_NULL;
+                }
+
                 // =================================================================
                 // 階段 A: 在幕後 Buffer (_milProcBuffer) 進行所有運算
                 // =================================================================

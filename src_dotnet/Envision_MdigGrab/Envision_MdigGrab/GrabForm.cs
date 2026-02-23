@@ -77,6 +77,7 @@ namespace Envision_MdigGrab
 
             foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
             UpdateGlobalCoordLabel("Ready");
+            ApplyImageProcessingSetting();
         }
 
         // ================= Button Events =================
@@ -119,6 +120,7 @@ namespace Envision_MdigGrab
 
                 // 3. 建立相機 (傳入 System ID)
                 var cam = new MilCameraUnit(currentSysId, cfg.Id, cfg.DevNum, cfg.DcfPath, cfg.DisplayPanel.Handle);
+                cam.EnableImageProcessing = checkBoxEnableImageProcessing.Checked;
                 cam.OnMouseDataChanged += UpdateGlobalCoordLabel_FromCamera;
                 cam.Initialize();
                 _cameras.Add(cam);
@@ -251,6 +253,21 @@ namespace Envision_MdigGrab
             button1.Enabled = enabled;
             button2.Enabled = enabled;
             button3.Enabled = enabled;
+        }
+
+        private void checkBoxEnableImageProcessing_CheckedChanged(object sender, EventArgs e)
+        {
+            ApplyImageProcessingSetting();
+        }
+
+        private void ApplyImageProcessingSetting()
+        {
+            bool enableImageProcessing = checkBoxEnableImageProcessing.Checked;
+
+            foreach (var cam in _cameras)
+            {
+                cam.EnableImageProcessing = enableImageProcessing;
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
