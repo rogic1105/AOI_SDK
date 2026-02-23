@@ -187,15 +187,31 @@ namespace Envision_MdigGrab
 
         private void UpdateGlobalCoordLabel(string text)
         {
-            if (_sharedCoordLabel == null) return;
-            if (_sharedCoordLabel.InvokeRequired)
+            if (_sharedCoordLabel != null)
             {
-                _sharedCoordLabel.BeginInvoke(new Action(() => UpdateGlobalCoordLabel(text)));
-            }
-            else
-            {
+                if (_sharedCoordLabel.InvokeRequired)
+                {
+                    _sharedCoordLabel.BeginInvoke(new Action(() => UpdateGlobalCoordLabel(text)));
+                    return;
+                }
+
                 _sharedCoordLabel.Text = text;
             }
+
+            UpdateCoordStatusStrip(text);
+        }
+
+        private void UpdateCoordStatusStrip(string text)
+        {
+            if (toolStripStatusLabelCoord == null) return;
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => UpdateCoordStatusStrip(text)));
+                return;
+            }
+
+            toolStripStatusLabelCoord.Text = text;
         }
 
         private void StatusTimer_Tick(object sender, EventArgs e)
