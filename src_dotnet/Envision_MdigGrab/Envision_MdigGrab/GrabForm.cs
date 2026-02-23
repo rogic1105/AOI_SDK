@@ -119,8 +119,13 @@ namespace Envision_MdigGrab
                 }
 
                 // 3. 建立相機 (傳入 System ID)
-                var cam = new MilCameraUnit(currentSysId, cfg.Id, cfg.DevNum, cfg.DcfPath, cfg.DisplayPanel.Handle);
-                cam.EnableImageProcessing = checkBoxEnableImageProcessing.Checked;
+                var cam = new MilCameraUnit(
+                    currentSysId,
+                    cfg.Id,
+                    cfg.DevNum,
+                    cfg.DcfPath,
+                    cfg.DisplayPanel.Handle,
+                    checkBoxEnableImageProcessing.Checked);
                 cam.OnMouseDataChanged += UpdateGlobalCoordLabel_FromCamera;
                 cam.Initialize();
                 _cameras.Add(cam);

@@ -47,13 +47,14 @@ namespace Envision_MdigGrab
         /// <summary>
         /// 建構子：必須傳入 systemId
         /// </summary>
-        public MilCameraUnit(MIL_ID systemId, int id, MIL_INT devNum, string dcfPath, IntPtr panelHandle)
+        public MilCameraUnit(MIL_ID systemId, int id, MIL_INT devNum, string dcfPath, IntPtr panelHandle, bool enableImageProcessing = true)
         {
             _ownerSystemId = systemId; // [重要] 保存 System ID
             CameraId = id;
             _devNum = devNum;
             _dcfPath = dcfPath;
             _panelHandle = panelHandle;
+            EnableImageProcessing = enableImageProcessing;
 
             _cameraStatusDelegate = new MIL_DIG_HOOK_FUNCTION_PTR(CameraStatusHandler);
             _mouseStatusDelegate = new MIL_DISP_HOOK_FUNCTION_PTR(MouseStatusHandler);
