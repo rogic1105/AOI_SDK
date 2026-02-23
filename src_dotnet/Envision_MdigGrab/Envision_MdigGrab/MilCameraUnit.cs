@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Threading;
 using Matrox.MatroxImagingLibrary;
 
 namespace Envision_MdigGrab
@@ -35,6 +37,12 @@ namespace Envision_MdigGrab
         private MIL_INT _devNum;
         private string _dcfPath;
         private IntPtr _panelHandle;
+
+        private long _fpsWindowStartTicks = 0;
+        private int _fpsFrameCount = 0;
+        private double _currentFps = 0;
+
+        public double CurrentFps => Volatile.Read(ref _currentFps);
 
         // Delegates (防止被 GC 回收)
         private MIL_DIG_HOOK_FUNCTION_PTR _cameraStatusDelegate;
@@ -125,6 +133,7 @@ namespace Envision_MdigGrab
                 if (!cam.EnableImageProcessing)
                 {
                     MIL.MbufCopy(modifiedBuffer, cam._milDisplayBuffer);
+                    cam.UpdateFps();
                     return MIL.M_NULL;
                 }
 
@@ -158,6 +167,7 @@ namespace Envision_MdigGrab
                 MIL.MbufCopy(cam._milProcBuffer, cam._milDisplayBuffer);
             }
 
+            cam.UpdateFps();
             return MIL.M_NULL;
         }
 
@@ -174,11 +184,13 @@ namespace Envision_MdigGrab
             if (_userWantsGrab && !IsLive && CheckPresence())
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_START, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
+                ResetFps();
                 IsLive = true;
             }
             else if (!_userWantsGrab && IsLive)
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
+                ResetFps();
                 IsLive = false;
             }
         }
@@ -199,6 +211,7 @@ namespace Envision_MdigGrab
             if (MilDigitizer != MIL.M_NULL)
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
+                ResetFps();
                 IsLive = false;
 
                 MIL.MdigHookFunction(MilDigitizer, MIL.M_CAMERA_PRESENT + MIL.M_UNHOOK, _cameraStatusDelegate, IntPtr.Zero);
@@ -240,6 +253,33 @@ namespace Envision_MdigGrab
             // 注意：我們不在這裡釋放 System，因為 System 是由外部 (Form) 傳入並管理的
         }
 
+
+        private void ResetFps()
+        {
+            _fpsWindowStartTicks = 0;
+            _fpsFrameCount = 0;
+            Volatile.Write(ref _currentFps, 0);
+        }
+
+        private void UpdateFps()
+        {
+            long now = Stopwatch.GetTimestamp();
+            if (_fpsWindowStartTicks == 0)
+            {
+                _fpsWindowStartTicks = now;
+                _fpsFrameCount = 0;
+            }
+
+            _fpsFrameCount++;
+            double elapsedSec = (double)(now - _fpsWindowStartTicks) / Stopwatch.Frequency;
+            if (elapsedSec >= 1.0)
+            {
+                Volatile.Write(ref _currentFps, _fpsFrameCount / elapsedSec);
+                _fpsWindowStartTicks = now;
+                _fpsFrameCount = 0;
+            }
+        }
+
         private MIL_INT MouseStatusHandler(MIL_INT HookType, MIL_ID EventId, IntPtr UserPtr)
         {
             if (_isReleased || _milDisplayBuffer == MIL.M_NULL) return MIL.M_NULL;
@@ -273,6 +313,7 @@ namespace Envision_MdigGrab
             if (!present && IsLive)
             {
                 MIL.MdigProcess(MilDigitizer, _milGrabBuffers, _milGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, _processingDelegate, GCHandle.ToIntPtr(_hUserData));
+                ResetFps();
                 IsLive = false;
             }
             return MIL.M_NULL;

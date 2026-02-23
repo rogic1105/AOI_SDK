@@ -37,6 +37,9 @@
             this.label2 = new System.Windows.Forms.Label();
             this.labelCoord1 = new System.Windows.Forms.Label();
             this.checkBoxEnableImageProcessing = new System.Windows.Forms.CheckBox();
+            this.statusStripMain = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusLabelFps = new System.Windows.Forms.ToolStripStatusLabel();
+            this.statusStripMain.SuspendLayout();
             this.SuspendLayout();
             // 
             // panel1
@@ -109,7 +112,7 @@
             // labelCoord1
             // 
             this.labelCoord1.AutoSize = true;
-            this.labelCoord1.Location = new System.Drawing.Point(11, 303);
+            this.labelCoord1.Location = new System.Drawing.Point(11, 282);
             this.labelCoord1.Name = "labelCoord1";
             this.labelCoord1.Size = new System.Drawing.Size(41, 15);
             this.labelCoord1.TabIndex = 6;
@@ -128,11 +131,30 @@
             this.checkBoxEnableImageProcessing.UseVisualStyleBackColor = true;
             this.checkBoxEnableImageProcessing.CheckedChanged += new System.EventHandler(this.checkBoxEnableImageProcessing_CheckedChanged);
             // 
+            // 
+            // statusStripMain
+            // 
+            this.statusStripMain.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.statusStripMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabelFps});
+            this.statusStripMain.Location = new System.Drawing.Point(0, 303);
+            this.statusStripMain.Name = "statusStripMain";
+            this.statusStripMain.Size = new System.Drawing.Size(918, 26);
+            this.statusStripMain.TabIndex = 8;
+            this.statusStripMain.Text = "statusStrip1";
+            // 
+            // toolStripStatusLabelFps
+            // 
+            this.toolStripStatusLabelFps.Name = "toolStripStatusLabelFps";
+            this.toolStripStatusLabelFps.Size = new System.Drawing.Size(62, 20);
+            this.toolStripStatusLabelFps.Text = "FPS: N/A";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(918, 329);
+            this.Controls.Add(this.statusStripMain);
             this.Controls.Add(this.checkBoxEnableImageProcessing);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.labelCoord1);
@@ -145,6 +167,8 @@
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.statusStripMain.ResumeLayout(false);
+            this.statusStripMain.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -161,5 +185,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label labelCoord1;
         private System.Windows.Forms.CheckBox checkBoxEnableImageProcessing;
+        private System.Windows.Forms.StatusStrip statusStripMain;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelFps;
     }
 }

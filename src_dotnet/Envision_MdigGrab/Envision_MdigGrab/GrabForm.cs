@@ -78,6 +78,7 @@ namespace Envision_MdigGrab
             foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
             UpdateGlobalCoordLabel("Ready");
             ApplyImageProcessingSetting();
+            UpdateFpsStatusStrip();
         }
 
         // ================= Button Events =================
@@ -211,6 +212,8 @@ namespace Envision_MdigGrab
                     cam.ApplyGrabState();
                 }
             }
+
+            UpdateFpsStatusStrip();
         }
 
         private void UpdateStatusUI(int id, bool isConnected)
@@ -251,6 +254,7 @@ namespace Envision_MdigGrab
             foreach (var cfg in _configs) UpdateStatusUI(cfg.Id, false);
             _userWantsGrab = false;
             UpdateGlobalCoordLabel("System Released");
+            UpdateFpsStatusStrip();
         }
 
         private void SetButtonsEnabled(bool enabled)
@@ -273,6 +277,30 @@ namespace Envision_MdigGrab
             {
                 cam.EnableImageProcessing = enableImageProcessing;
             }
+        }
+
+
+        private void UpdateFpsStatusStrip()
+        {
+            if (toolStripStatusLabelFps == null) return;
+
+            if (_cameras.Count == 0)
+            {
+                toolStripStatusLabelFps.Text = "FPS: N/A";
+                return;
+            }
+
+            var fpsParts = new List<string>();
+            double totalFps = 0;
+
+            foreach (var cam in _cameras)
+            {
+                double fps = cam.CurrentFps;
+                totalFps += fps;
+                fpsParts.Add($"CAM {cam.CameraId}: {fps:F1}");
+            }
+
+            toolStripStatusLabelFps.Text = $"FPS | {string.Join(" | ", fpsParts)} | Total: {totalFps:F1}";
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
